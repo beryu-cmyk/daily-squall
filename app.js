@@ -37,8 +37,15 @@ function generatePrompt() {
     const expression = pickRandom(EXPRESSIONS);
     const theme = pickRandom(THEMES);
     const artStyle = pickRandom(ART_STYLES);
+    const lighting = pickRandom(LIGHTING);
+    // 50%の確率で小物を追加
+    const prop = Math.random() > 0.5 ? pickRandom(PROPS) : null;
 
-    const prompt = `Squall Leonhart from Final Fantasy VIII. 茶色のくせ毛、額から鼻にかけての傷跡、鋼色の青い目。${outfit}。${theme}${expression}。${artStyle}、高品質、美しいライティング。`;
+    let prompt = `Squall Leonhart from Final Fantasy VIII. 茶色のくせ毛、額から鼻にかけての傷跡、鋼色の青い目。${outfit}。${theme}${expression}。${lighting}。`;
+    if (prop) {
+        prompt += `${prop}を持っている。`;
+    }
+    prompt += `${artStyle}、高品質。`;
 
     return {
         isSpecial: false,
@@ -46,6 +53,8 @@ function generatePrompt() {
         expression,
         theme,
         artStyle,
+        lighting,
+        prop,
         prompt
     };
 }
@@ -63,12 +72,16 @@ function updateUI(result) {
         detailsDisplay.innerHTML = `<p class="special-message">今日は特別な日だ……</p>`;
     } else {
         specialBadge.classList.add('hidden');
-        detailsDisplay.innerHTML = `
+        let detailsHtml = `
       <div class="detail-item"><span class="label">服装:</span> ${result.outfit}</div>
       <div class="detail-item"><span class="label">表情:</span> ${result.expression}</div>
       <div class="detail-item"><span class="label">テーマ:</span> ${result.theme}</div>
       <div class="detail-item"><span class="label">絵柄:</span> ${result.artStyle}</div>
-    `;
+      <div class="detail-item"><span class="label">光:</span> ${result.lighting}</div>`;
+        if (result.prop) {
+            detailsHtml += `<div class="detail-item"><span class="label">小物:</span> ${result.prop}</div>`;
+        }
+        detailsDisplay.innerHTML = detailsHtml;
     }
 
     promptDisplay.textContent = result.prompt;
