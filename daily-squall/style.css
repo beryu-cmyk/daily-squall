@@ -1,0 +1,245 @@
+/* ============================================
+   Daily Squall Generator - スタイル
+   ============================================ */
+
+:root {
+  --bg-primary: #0d1117;
+  --bg-secondary: #161b22;
+  --bg-card: #21262d;
+  --accent-primary: #4a6fa5;
+  --accent-secondary: #7b68ee;
+  --accent-gold: #d4a574;
+  --text-primary: #e6edf3;
+  --text-secondary: #8b949e;
+  --border-color: #30363d;
+  --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --gradient: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Noto Sans JP', 'Segoe UI', sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background-image: 
+    radial-gradient(ellipse at top, rgba(74, 111, 165, 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at bottom, rgba(123, 104, 238, 0.1) 0%, transparent 50%);
+}
+
+.container {
+  max-width: 700px;
+  width: 100%;
+}
+
+/* ヘッダー */
+header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+h1 {
+  font-size: 2rem;
+  font-weight: 300;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.5rem;
+  background: var(--gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.subtitle {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+/* 特別な日の通知 */
+#special-notice {
+  background: linear-gradient(135deg, var(--accent-gold), #e8c495);
+  color: #1a1a1a;
+  padding: 0.75rem 1.5rem;
+  border-radius: 2rem;
+  font-weight: 500;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  animation: glow 2s ease-in-out infinite;
+}
+
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(212, 165, 116, 0.4); }
+  50% { box-shadow: 0 0 30px rgba(212, 165, 116, 0.7); }
+}
+
+/* メインカード */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+  padding: 2rem;
+  box-shadow: var(--shadow);
+}
+
+/* 生成ボタン */
+#generate-btn {
+  width: 100%;
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: white;
+  background: var(--gradient);
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-bottom: 1.5rem;
+}
+
+#generate-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(74, 111, 165, 0.4);
+}
+
+#generate-btn:active {
+  transform: translateY(0);
+}
+
+/* 特別バッジ */
+#special-badge {
+  display: inline-block;
+  background: var(--accent-gold);
+  color: #1a1a1a;
+  padding: 0.5rem 1rem;
+  border-radius: 2rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-bottom: 1rem;
+}
+
+/* プロンプト表示エリア */
+.prompt-area {
+  margin-top: 1rem;
+}
+
+#prompt-display {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: var(--text-primary);
+  min-height: 100px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+#prompt-display:empty::before {
+  content: 'ボタンを押して、今日のスコールを生成しよう……';
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* 詳細表示 */
+#details-display {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: var(--bg-secondary);
+  border-radius: 0.5rem;
+  border-left: 3px solid var(--accent-primary);
+}
+
+.detail-item {
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.detail-item:last-child {
+  margin-bottom: 0;
+}
+
+.detail-item .label {
+  color: var(--accent-secondary);
+  font-weight: 500;
+  margin-right: 0.5rem;
+}
+
+.special-message {
+  color: var(--accent-gold);
+  font-style: italic;
+  text-align: center;
+}
+
+/* コピーボタン */
+#copy-btn {
+  margin-top: 1rem;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+#copy-btn:hover {
+  background: var(--border-color);
+}
+
+#copy-btn.copied {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+}
+
+/* ユーティリティ */
+.hidden {
+  display: none !important;
+}
+
+.fade-in {
+  animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* フッター */
+footer {
+  margin-top: 2rem;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+footer a {
+  color: var(--accent-primary);
+  text-decoration: none;
+}
+
+/* レスポンシブ */
+@media (max-width: 600px) {
+  body {
+    padding: 1rem;
+  }
+  
+  h1 {
+    font-size: 1.5rem;
+  }
+  
+  .card {
+    padding: 1.5rem;
+  }
+}
