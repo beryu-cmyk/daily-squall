@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daily Squall Generator</title>
+  <meta name="description" content="毎日ランダムなシチュエーションでスコールのイラストプロンプトを生成">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Daily Squall Generator</h1>
+      <p class="subtitle">── 今日のスコールに、会いに行こう ──</p>
+    </header>
+
+    <div id="special-notice" class="hidden"></div>
+
+    <main class="card">
+      <button id="generate-btn">✨ 今日のスコールを生成 ✨</button>
+      
+      <div id="special-badge" class="hidden"></div>
+      
+      <div class="prompt-area">
+        <div id="prompt-display"></div>
+        <div id="details-display"></div>
+      </div>
+      
+      <button id="copy-btn" class="hidden">📋 プロンプトをコピー</button>
+    </main>
+
+    <footer>
+      <p>Made with 💙 for あい</p>
+    </footer>
+  </div>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
