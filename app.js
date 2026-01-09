@@ -143,21 +143,41 @@ function generatePrompt() {
     const isIndoor = themeObj.tag === "indoor";
 
     const outfit = pickRandom(OUTFITS);
-    const expression = pickRandom(EXPRESSIONS);
+    let expression = pickRandom(EXPRESSIONS);
     const renderStyle = pickRandom(STYLE_RENDER);
     const colorStyle = pickRandom(STYLE_COLORING);
 
+    // 夕焼け補正：sunset/evening/duskテーマなら夕方ライティング優先
+    function themeMentionsSunset(t) {
+        return /(sunset|evening|dusk)/i.test(t);
+    }
+
+    // sleepy補正：outdoor + sleepyは「眠れなかった」に置換
+    if (!isIndoor && /(just woke up|sleepy)/i.test(expression)) {
+        expression = "couldn't sleep, tired eyes, quiet gaze";
+    }
+
     // 光は環境で絞る + テーマに光ワードがあればneutralに退避
+    // ただし夕焼け系は夕方ライティングを優先
     let lighting = "";
-    if (themeMentionsLight(theme)) {
+    if (themeMentionsSunset(theme)) {
+        // 夕焼け系は夕方プリセット優先（70%/30%）
+        lighting = Math.random() < 0.7
+            ? "warm sunset backlight, strong rim light"
+            : "orange evening backlight";
+    } else if (themeMentionsLight(theme)) {
         lighting = "neutral daylight, balanced exposure";
     } else {
         const lightingPool = filterLightingByEnv(isIndoor);
         lighting = pickRandom(lightingPool);
     }
 
-    // VFXは環境で絞る
+    // VFXは環境で絞る + 雨粒をsubtleに
     let vfx = pickRandom(filterVfxByEnv(isIndoor));
+    // 雨粒はsubtle表現に
+    if (vfx === "rain droplet reflections") {
+        vfx = "subtle rain droplet reflections, wet surface";
+    }
 
     // 互換ルール：candle + rain/snow は禁止
     if (lighting.includes("candlelight") || theme.toLowerCase().includes("candle")) {
@@ -179,7 +199,14 @@ function generatePrompt() {
 
     // 眼鏡がある場合の追加ネガティブ
     const hasGlasses = acc.some(a => a.includes("glasses"));
-    const extraNeg = hasGlasses ? NEGATIVE_GLASSES.join(", ") : "";
+    let extraNeg = hasGlasses ? NEGATIVE_GLASSES.join(", ") : "";
+
+    // ============================================
+    // 参照画像対策（常にON：画風はプロンプト優先）
+    // ============================================
+    const REF_NOTE = "Use reference image for character likeness only; follow the prompt's style, do NOT copy reference art style";
+    const REF_NEG = "style transfer from reference, same shading as reference, same color grading as reference";
+    extraNeg = extraNeg ? `${extraNeg}, ${REF_NEG}` : REF_NEG;
 
     const prompt = [
         QUALITY_FIXED,
@@ -193,8 +220,9 @@ function generatePrompt() {
         shadow,
         vfx,
         acc.length > 0 ? acc.join(", ") : null,
+        REF_NOTE,
         "cinematic composition, depth of field",
-        `Negative: ${NEGATIVE_FIXED}${extraNeg ? ", " + extraNeg : ""}`
+        `Negative: ${NEGATIVE_FIXED}, ${extraNeg}`
     ].filter(Boolean).join(", ");
 
     return {
