@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,6 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
   <div class="container">
     <header>
@@ -20,15 +22,19 @@
     <div id="special-notice" class="hidden"></div>
 
     <main class="card">
+      <div class="mode-switcher">
+        <button id="mode-canon" class="mode-btn">🎬 CANON</button>
+        <button id="mode-experiment" class="mode-btn active">🧪 EXPERIMENT</button>
+      </div>
       <button id="generate-btn">✨ 今日のスコールを生成 ✨</button>
-      
+
       <div id="special-badge" class="hidden"></div>
-      
+
       <div class="prompt-area">
         <div id="prompt-display"></div>
         <div id="details-display"></div>
       </div>
-      
+
       <button id="copy-btn" class="hidden">📋 プロンプトをコピー</button>
     </main>
 
@@ -40,4 +46,5 @@
   <script src="data.js"></script>
   <script src="app.js"></script>
 </body>
+
 </html>

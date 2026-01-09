@@ -1,56 +1,82 @@
 // ============================================
-// Daily Squall Generator - データ定義 v2
-// GPTスコール引き継ぎパック統合版
+// Daily Squall Generator - データ定義 v3
+// CANON / EXPERIMENT 2モード制
 // ============================================
 
 // ============================================
-// 服装リスト（眼鏡は削除→アクセサリ枠へ移動）
+// MODE（モード定義）
 // ============================================
-const OUTFITS = [
-    // 定番
+const MODE = {
+    CANON: "canon",
+    EXPERIMENT: "experiment"
+};
+
+// ============================================
+// 服装リスト（CANON / EXPERIMENT 分割）
+// ============================================
+const OUTFITS_CANON = [
     "black leather jacket with fur collar, iconic look",
     "SeeD formal uniform, composed posture",
-    // カジュアル・日常
-    "white shirt with rolled-up sleeves",
+    "white shirt with rolled-up sleeves"
+];
+
+const OUTFITS_EXPERIMENT = [
     "turtleneck sweater, relaxed fit",
     "comfortable hoodie, casual stance",
     "suit with loosened tie, after-work mood",
     "training wear, slightly sweaty",
-    // 特別
-    "shirtless with wet hair, towel on shoulder",
-    "tank top showing toned arms",
     "traditional yukata, summer evening",
     "winter coat, cold weather outfit",
     "apron in the kitchen, domestic scene",
     "leather jacket suitable for neon-lit streets",
-    "wearing gloves, stylish touch"
+    "tank top showing toned arms",
+    "shirtless with wet hair, towel on shoulder"
 ];
 
+// 後方互換用（全部入り）
+const OUTFITS = [...OUTFITS_CANON, ...OUTFITS_EXPERIMENT];
+
 // ============================================
-// 表情リスト
+// 表情リスト（CANON / EXPERIMENT 分割）
 // ============================================
-const EXPRESSIONS = [
-    // 穏やか系
-    "gentle smile, warm expression",
-    "eyes softly narrowed, peaceful look",
-    "relieved soft expression",
-    "almost smiling but holding back, soft eyes only",
-    // クール系
+const EXPRESSIONS_CANON = [
     "serious gaze, focused eyes",
     "neutral expression but light in eyes",
     "sharp watchful eyes, alert",
     "slightly irritated frown",
-    // 照れ・弱さ
-    "looking away shyly, faint blush",
-    "hiding embarrassment with grumpy look",
-    "just woke up, still sleepy",
-    // エモ系
     "melancholic expression",
-    "surprised face",
-    "subtly provocative gaze",
     "trying not to laugh",
-    "slightly exasperated look"
+    "slightly exasperated look",
+    "hiding embarrassment with grumpy look"
 ];
+
+const EXPRESSIONS_EXPERIMENT = [
+    "gentle smile, warm expression",
+    "eyes softly narrowed, peaceful look",
+    "relieved soft expression",
+    "almost smiling but holding back, soft eyes only",
+    "looking away shyly, faint blush",
+    "just woke up, still sleepy",
+    "surprised face",
+    "subtly provocative gaze"
+];
+
+// 後方互換用（全部入り）
+const EXPRESSIONS = [...EXPRESSIONS_CANON, ...EXPRESSIONS_EXPERIMENT];
+
+// ============================================
+// スコールの核（必ずプロンプトに入れる）
+// ============================================
+const CORE_CANON = [
+    "intense gaze, small irises",
+    "mouth held tight",
+    "cool, restrained presence"
+].join(", ");
+
+const CORE_EXPERIMENT = [
+    "intense gaze, small irises",
+    "calm but unapproachable"
+].join(", ");
 
 // ============================================
 // テーマ・シチュエーション（indoor/outdoor タグ付き）

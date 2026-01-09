@@ -97,6 +97,35 @@ h1 {
   box-shadow: var(--shadow);
 }
 
+/* モード切替 */
+.mode-switcher {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.mode-btn {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.mode-btn:hover {
+  background: var(--border-color);
+}
+
+.mode-btn.active {
+  color: white;
+  background: var(--gradient);
+  border-color: var(--accent-primary);
+}
+
 /* 生成ボタン */
 #generate-btn {
   width: 100%;

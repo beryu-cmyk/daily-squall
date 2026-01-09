@@ -1,6 +1,6 @@
 // ============================================
-// Daily Squall Generator - メインロジック v2
-// GPTスコール引き継ぎパック統合版
+// Daily Squall Generator - メインロジック v3
+// CANON / EXPERIMENT 2モード制
 // ============================================
 
 // ============================================
@@ -13,6 +13,49 @@ function pickRandom(array) {
 function getTodayKey() {
     const now = new Date();
     return `${now.getMonth() + 1}/${now.getDate()}`;
+}
+
+// ============================================
+// モード別選択関数
+// ============================================
+let currentMode = MODE.EXPERIMENT; // デフォルトはEXPERIMENT
+
+function pickOutfit(mode) {
+    return mode === MODE.CANON ? pickRandom(OUTFITS_CANON) : pickRandom(OUTFITS_EXPERIMENT);
+}
+
+function pickExpression(mode) {
+    // CANONは完全にCANONから
+    if (mode === MODE.CANON) return pickRandom(EXPRESSIONS_CANON);
+
+    // EXPERIMENTは30%でCANONから刺さる目を引く
+    return (Math.random() < 0.30) ? pickRandom(EXPRESSIONS_CANON) : pickRandom(EXPRESSIONS_EXPERIMENT);
+}
+
+function coreByMode(mode) {
+    return mode === MODE.CANON ? CORE_CANON : CORE_EXPERIMENT;
+}
+
+// ============================================
+// 事故防止：「柔×柔」なら圧を足す
+// ============================================
+function needsPressure(outfit, expression) {
+    const softOutfit = /(turtleneck|hoodie|yukata|apron|suit)/i.test(outfit);
+    const softExpr = /(gentle smile|peaceful|relieved|shy|sleepy|surprised)/i.test(expression);
+    return softOutfit && softExpr;
+}
+
+function applyPressureFix(parts) {
+    if (parts.mode === MODE.EXPERIMENT && needsPressure(parts.outfit, parts.expression)) {
+        // コアを強める
+        parts.coreLine = [
+            parts.coreLine,
+            "mouth held tight",
+            "a sharp glint in the eyes"
+        ].join(", ");
+        parts.pressureApplied = true;
+    }
+    return parts;
 }
 
 // ============================================
@@ -206,13 +249,16 @@ function generatePrompt() {
         };
     }
 
-    // 通常のランダム生成
+    // 通常のランダム生成（モード対応）
+    const mode = currentMode;
     const themeObj = pickRandom(THEMES);
     const theme = themeObj.text;
     const isIndoor = themeObj.tag === "indoor";
 
-    const outfit = pickRandom(OUTFITS);
-    let expression = pickRandom(EXPRESSIONS);
+    // モード別で服装・表情を選択
+    const outfit = pickOutfit(mode);
+    let expression = pickExpression(mode);
+    let coreLine = coreByMode(mode);
     const renderStyle = pickRandom(STYLE_RENDER);
     const colorStyle = pickRandom(STYLE_COLORING);
 
@@ -277,11 +323,25 @@ function generatePrompt() {
     const REF_NEG = "style transfer from reference, same shading as reference, same color grading as reference";
     extraNeg = extraNeg ? `${extraNeg}, ${REF_NEG}` : REF_NEG;
 
+    // ============================================
+    // 「柔×柔」事故防止（applyPressureFix）
+    // ============================================
+    let promptParts = {
+        mode,
+        outfit,
+        expression,
+        coreLine,
+        pressureApplied: false
+    };
+    promptParts = applyPressureFix(promptParts);
+    const finalCoreLine = promptParts.coreLine;
+
     const prompt = [
         QUALITY_FIXED,
         "Squall Leonhart from Final Fantasy VIII, brown wavy hair, steel-blue eyes, diagonal forehead scar",
         outfit,
         expression,
+        finalCoreLine,  // スコールの核を追加
         theme,
         renderStyle,
         colorStyle,
@@ -340,9 +400,12 @@ function generatePrompt() {
                 light: repairedParts.lighting,
                 vfx: repairedParts.vfx,
                 shadow: repairedParts.shadow || "なし",
-                accessories: acc.length > 0 ? acc.join(", ") : "なし"
+                accessories: acc.length > 0 ? acc.join(", ") : "なし",
+                core: finalCoreLine
             },
-            repairLog
+            repairLog,
+            mode: mode === MODE.CANON ? "CANON" : "EXPERIMENT",
+            pressureApplied: promptParts.pressureApplied
         };
     }
 
@@ -357,9 +420,12 @@ function generatePrompt() {
             light: lighting,
             vfx: vfx,
             shadow: shadow || "なし",
-            accessories: acc.length > 0 ? acc.join(", ") : "なし"
+            accessories: acc.length > 0 ? acc.join(", ") : "なし",
+            core: finalCoreLine
         },
-        repairLog: []
+        repairLog: [],
+        mode: mode === MODE.CANON ? "CANON" : "EXPERIMENT",
+        pressureApplied: promptParts.pressureApplied
     };
 }
 
@@ -450,6 +516,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('generate-btn').addEventListener('click', onGenerate);
     document.getElementById('copy-btn').addEventListener('click', copyToClipboard);
+
+    // モード切替イベント
+    const canonBtn = document.getElementById('mode-canon');
+    const experimentBtn = document.getElementById('mode-experiment');
+
+    canonBtn.addEventListener('click', () => {
+        currentMode = MODE.CANON;
+        canonBtn.classList.add('active');
+        experimentBtn.classList.remove('active');
+    });
+
+    experimentBtn.addEventListener('click', () => {
+        currentMode = MODE.EXPERIMENT;
+        experimentBtn.classList.add('active');
+        canonBtn.classList.remove('active');
+    });
 
     // 記念日チェック（固定のみ、祝日は非同期後）
     const todayKey = getTodayKey();
