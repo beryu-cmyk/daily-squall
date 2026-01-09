@@ -123,6 +123,7 @@ const STYLE_COLORING = [
     "high contrast highlight, dramatic shadows"
 ];
 
+// 光源（light source）
 const LIGHTING_PRESET = [
     "neutral daylight, balanced exposure",
     "warm sunset backlight, strong rim light",
@@ -132,8 +133,16 @@ const LIGHTING_PRESET = [
     "morning backlight",
     "orange evening backlight",
     "cold fluorescent light",
-    "blinds shadow falling on face",
-    "candlelight only",
+    "candlelight only"
+];
+
+// 影・模様（shadow pattern）
+const SHADOW_PRESET = [
+    "blinds shadow falling on face"
+];
+
+// VFX（粒子/反射/空気）
+const VFX_PRESET = [
     "rain droplet reflections",
     "snow particles in air",
     "dust motes in light beam"

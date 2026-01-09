@@ -71,6 +71,37 @@ function checkSpecialDay() {
 }
 
 // ============================================
+// 衝突対策用ヘルパー関数
+// ============================================
+function filterLightingByEnv(isIndoor) {
+    const indoor = [
+        "neutral daylight, balanced exposure",
+        "single desk lamp indoors, dramatic chiaroscuro",
+        "cold fluorescent light",
+        "candlelight only"
+    ];
+    const outdoor = [
+        "neutral daylight, balanced exposure",
+        "warm sunset backlight, strong rim light",
+        "cool moonlight, high contrast shadows",
+        "neon signage lighting, wet road reflections",
+        "morning backlight",
+        "orange evening backlight"
+    ];
+    return isIndoor ? indoor : outdoor;
+}
+
+function filterVfxByEnv(isIndoor) {
+    return isIndoor
+        ? ["dust motes in light beam"]
+        : ["rain droplet reflections", "snow particles in air"];
+}
+
+function themeMentionsLight(themeText) {
+    return /(backlight|neon|candle|fluorescent|moonlight|sunset|evening|morning|lamp|city lights)/i.test(themeText);
+}
+
+// ============================================
 // プロンプト生成
 // ============================================
 function generatePrompt() {
@@ -80,7 +111,7 @@ function generatePrompt() {
     if (specialDay) {
         const renderStyle = pickRandom(STYLE_RENDER);
         const colorStyle = pickRandom(STYLE_COLORING);
-        const lighting = pickRandom(LIGHTING_PRESET);
+        const lighting = "neutral daylight, balanced exposure"; // 特別日はneutralで安定
 
         const prompt = [
             QUALITY_FIXED,
@@ -115,15 +146,33 @@ function generatePrompt() {
     const expression = pickRandom(EXPRESSIONS);
     const renderStyle = pickRandom(STYLE_RENDER);
     const colorStyle = pickRandom(STYLE_COLORING);
-    const lighting = pickRandom(LIGHTING_PRESET);
+
+    // 光は環境で絞る + テーマに光ワードがあればneutralに退避
+    let lighting = "";
+    if (themeMentionsLight(theme)) {
+        lighting = "neutral daylight, balanced exposure";
+    } else {
+        const lightingPool = filterLightingByEnv(isIndoor);
+        lighting = pickRandom(lightingPool);
+    }
+
+    // VFXは環境で絞る
+    let vfx = pickRandom(filterVfxByEnv(isIndoor));
+
+    // 互換ルール：candle + rain/snow は禁止
+    if (lighting.includes("candlelight") || theme.toLowerCase().includes("candle")) {
+        vfx = "dust motes in light beam";
+    }
+
+    // 影は室内のみ35%
+    const shadow = isIndoor && Math.random() < 0.35 && SHADOW_PRESET.length > 0
+        ? pickRandom(SHADOW_PRESET) : "";
 
     // アクセサリ
     const acc = [];
-    // indoorの場合のみ45%で眼鏡
     if (isIndoor && Math.random() < 0.45 && ACCESSORIES_INDOOR.length > 0) {
         acc.push(pickRandom(ACCESSORIES_INDOOR));
     }
-    // 50%で共通アクセサリ
     if (Math.random() < 0.5 && ACCESSORIES_COMMON.length > 0) {
         acc.push(pickRandom(ACCESSORIES_COMMON));
     }
@@ -141,6 +190,8 @@ function generatePrompt() {
         renderStyle,
         colorStyle,
         lighting,
+        shadow,
+        vfx,
         acc.length > 0 ? acc.join(", ") : null,
         "cinematic composition, depth of field",
         `Negative: ${NEGATIVE_FIXED}${extraNeg ? ", " + extraNeg : ""}`
@@ -155,6 +206,8 @@ function generatePrompt() {
             theme: `${theme} (${isIndoor ? "indoor" : "outdoor"})`,
             style: `${renderStyle} / ${colorStyle}`,
             light: lighting,
+            vfx: vfx,
+            shadow: shadow || "なし",
             accessories: acc.length > 0 ? acc.join(", ") : "なし"
         }
     };
