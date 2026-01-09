@@ -32,7 +32,7 @@ body {
   align-items: center;
   justify-content: center;
   padding: 2rem;
-  background-image: 
+  background-image:
     radial-gradient(ellipse at top, rgba(74, 111, 165, 0.15) 0%, transparent 50%),
     radial-gradient(ellipse at bottom, rgba(123, 104, 238, 0.1) 0%, transparent 50%);
 }
@@ -77,8 +77,15 @@ h1 {
 }
 
 @keyframes glow {
-  0%, 100% { box-shadow: 0 0 20px rgba(212, 165, 116, 0.4); }
-  50% { box-shadow: 0 0 30px rgba(212, 165, 116, 0.7); }
+
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(212, 165, 116, 0.4);
+  }
+
+  50% {
+    box-shadow: 0 0 30px rgba(212, 165, 116, 0.7);
+  }
 }
 
 /* メインカード */
@@ -180,6 +187,29 @@ h1 {
   text-align: center;
 }
 
+/* 修正ログ（スコールが直した内容を表示） */
+.repair-log {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: rgba(74, 111, 165, 0.1);
+  border-radius: 0.5rem;
+  border-left: 3px solid var(--accent-gold);
+}
+
+.repair-header {
+  color: var(--accent-gold);
+  font-weight: 500;
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+}
+
+.repair-item {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.25rem;
+  padding-left: 0.5rem;
+}
+
 /* コピーボタン */
 #copy-btn {
   margin-top: 1rem;
@@ -212,8 +242,15 @@ h1 {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* フッター */
@@ -234,11 +271,11 @@ footer a {
   body {
     padding: 1rem;
   }
-  
+
   h1 {
     font-size: 1.5rem;
   }
-  
+
   .card {
     padding: 1.5rem;
   }

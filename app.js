@@ -102,6 +102,75 @@ function themeMentionsLight(themeText) {
 }
 
 // ============================================
+// 自動修正関数（repairPromptParts）
+// 光源二重指定、Env-VFX不整合、画風-陰影矛盾を自動検出・修正
+// ============================================
+function repairPromptParts(p) {
+    const low = (s) => (s || "").toLowerCase();
+    const has = (s, kw) => low(s).includes(kw);
+
+    // p = { envTag, theme, styleRender, styleColoring, lighting, vfx, shadow, expression }
+
+    // ---- 1) Lighting collision（ネオン×蝋燭、夕焼け×neutral 等）
+    // neon & candle は共存させない
+    if (has(p.lighting, "neon") && has(p.lighting, "candle")) {
+        p.lighting = "neon signage lighting, wet road reflections";
+    }
+
+    // silhouette/backlight があるのに neutral daylight は弱いので置換
+    const wantsBacklight =
+        /(sunset|evening|dusk|backlight|silhouette|rim light)/i.test(p.theme + " " + p.expression);
+    if (wantsBacklight && has(p.lighting, "neutral daylight")) {
+        p.lighting = "warm sunset backlight, strong rim light";
+    }
+
+    // ---- 2) Env–VFX mismatch
+    const isIndoor = p.envTag === "indoor";
+
+    if (isIndoor && /(rain|snow)/i.test(p.vfx)) {
+        p.vfx = "dust motes in light beam";
+    }
+    if (!isIndoor && /dust motes|blinds shadow/i.test(p.vfx + " " + (p.shadow || ""))) {
+        p.vfx = "wet surface reflections";
+        p.shadow = ""; // 屋外では基本オフ
+    }
+
+    // ---- 3) Style–Contrast mismatch（画風と陰影の矛盾）
+    const softStyle = /(picture book|watercolor|soft pastel|dreamy)/i.test(p.styleRender);
+    const hardContrast = /(high contrast|dramatic shadows|hard key|chiaroscuro)/i.test(p.styleColoring + " " + p.lighting);
+
+    if (softStyle && hardContrast) {
+        p.styleColoring = "soft painterly shading, smooth gradients";
+        if (/candlelight only|hard key|chiaroscuro/i.test(p.lighting)) {
+            p.lighting = "soft warm light, gentle shadows";
+        }
+    }
+
+    return p;
+}
+
+// 修正ログ付きバージョン
+function repairWithLog(p) {
+    const log = [];
+    const before = {
+        lighting: p.lighting,
+        vfx: p.vfx,
+        styleColoring: p.styleColoring,
+        shadow: p.shadow || ""
+    };
+
+    p = repairPromptParts(p);
+
+    if (before.lighting !== p.lighting) log.push(`光: "${before.lighting}" → "${p.lighting}"`);
+    if (before.vfx !== p.vfx) log.push(`VFX: "${before.vfx}" → "${p.vfx}"`);
+    if (before.styleColoring !== p.styleColoring) log.push(`塗り: "${before.styleColoring}" → "${p.styleColoring}"`);
+    if (before.shadow !== (p.shadow || "")) log.push(`影: "${before.shadow}" → "${p.shadow || "なし"}"`);
+
+    return { parts: p, repairLog: log };
+}
+
+
+// ============================================
 // プロンプト生成
 // ============================================
 function generatePrompt() {
@@ -225,6 +294,58 @@ function generatePrompt() {
         `Negative: ${NEGATIVE_FIXED}, ${extraNeg}`
     ].filter(Boolean).join(", ");
 
+    // ============================================
+    // 自動修正を適用（repairWithLog）
+    // ============================================
+    let parts = {
+        envTag: isIndoor ? "indoor" : "outdoor",
+        theme,
+        expression,
+        styleRender: renderStyle,
+        styleColoring: colorStyle,
+        lighting,
+        vfx,
+        shadow
+    };
+
+    const { parts: repairedParts, repairLog } = repairWithLog(parts);
+
+    // 修正があった場合は修正後の値でプロンプトを再構築
+    if (repairLog.length > 0) {
+        const repairedPrompt = [
+            QUALITY_FIXED,
+            "Squall Leonhart from Final Fantasy VIII, brown wavy hair, steel-blue eyes, diagonal forehead scar",
+            outfit,
+            repairedParts.expression || expression,
+            repairedParts.theme || theme,
+            renderStyle,
+            repairedParts.styleColoring,
+            repairedParts.lighting,
+            repairedParts.shadow || "",
+            repairedParts.vfx,
+            acc.length > 0 ? acc.join(", ") : null,
+            REF_NOTE,
+            "cinematic composition, depth of field",
+            `Negative: ${NEGATIVE_FIXED}, ${extraNeg}`
+        ].filter(Boolean).join(", ");
+
+        return {
+            isSpecial: false,
+            prompt: repairedPrompt,
+            details: {
+                outfit,
+                expression,
+                theme: `${theme} (${isIndoor ? "indoor" : "outdoor"})`,
+                style: `${renderStyle} / ${repairedParts.styleColoring}`,
+                light: repairedParts.lighting,
+                vfx: repairedParts.vfx,
+                shadow: repairedParts.shadow || "なし",
+                accessories: acc.length > 0 ? acc.join(", ") : "なし"
+            },
+            repairLog
+        };
+    }
+
     return {
         isSpecial: false,
         prompt,
@@ -237,7 +358,8 @@ function generatePrompt() {
             vfx: vfx,
             shadow: shadow || "なし",
             accessories: acc.length > 0 ? acc.join(", ") : "なし"
-        }
+        },
+        repairLog: []
     };
 }
 
@@ -261,7 +383,7 @@ function updateUI(result) {
     `;
     } else {
         specialBadge.classList.add('hidden');
-        detailsDisplay.innerHTML = `
+        let detailsHtml = `
       <div class="detail-item"><span class="label">服装:</span> ${result.details.outfit}</div>
       <div class="detail-item"><span class="label">表情:</span> ${result.details.expression}</div>
       <div class="detail-item"><span class="label">テーマ:</span> ${result.details.theme}</div>
@@ -269,6 +391,18 @@ function updateUI(result) {
       <div class="detail-item"><span class="label">光:</span> ${result.details.light}</div>
       <div class="detail-item"><span class="label">アクセ:</span> ${result.details.accessories}</div>
     `;
+
+        // 修正ログがあれば表示
+        if (result.repairLog && result.repairLog.length > 0) {
+            detailsHtml += `
+        <div class="repair-log">
+          <div class="repair-header">🔧 スコールが直した:</div>
+          ${result.repairLog.map(log => `<div class="repair-item">${log}</div>`).join('')}
+        </div>
+      `;
+        }
+
+        detailsDisplay.innerHTML = detailsHtml;
     }
 
     promptDisplay.textContent = result.prompt;
