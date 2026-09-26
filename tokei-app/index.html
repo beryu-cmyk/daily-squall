@@ -1,0 +1,2381 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="format-detection" content="telephone=no">
+<title>とけいを よもう</title>
+<style>
+/* 点滅・アニメーション・フラッシュは使わない（第7章・受け入れ基準23） */
+*, *::before, *::after {
+  box-sizing: border-box;
+  animation: none !important;
+  transition: none !important;
+  -webkit-tap-highlight-color: transparent;
+}
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: #fbfbf6;
+  color: #111;
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
+  -webkit-text-size-adjust: 100%;
+}
+#app { height: 100vh; height: 100dvh; }
+button { font-family: inherit; color: inherit; }
+
+.btn {
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  background: #fff;
+  border: 3px solid #333;
+  border-radius: 16px;
+  min-height: 56px;
+  padding: 8px 18px;
+  font-size: 24px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.btn:disabled { cursor: default; }
+.btn.big { min-height: 76px; font-size: 32px; padding: 10px 36px; }
+.btn.small { min-height: 40px; font-size: 16px; padding: 6px 12px; border-width: 2px; border-radius: 10px; }
+.btn.selected { border-width: 7px; border-color: #111; background: #e6f0ff; }
+.btn.hinted { outline: 5px dashed #e65100; outline-offset: 3px; }
+.btn.danger { border-color: #b71c1c; color: #b71c1c; }
+
+.screen { height: 100%; display: flex; flex-direction: column; padding: 12px 16px; gap: 10px; position: relative; }
+
+/* ===== S0 ===== */
+.s0 { align-items: center; justify-content: center; gap: 22px; }
+.s0 .title { font-size: 48px; margin: 0; letter-spacing: 0.08em; }
+.s0-msg { font-size: 28px; margin: 0; }
+.codes { display: grid; grid-template-columns: repeat(4, minmax(0, 150px)); gap: 18px; }
+.codes.n1, .codes.n2, .codes.n3 { grid-template-columns: repeat(3, minmax(0, 150px)); }
+.btn.code { min-height: 100px; font-size: 44px; }
+.s0-center { display: flex; justify-content: center; }
+.btn.start { min-width: 280px; }
+.btn.start:disabled { opacity: 0.35; }
+.teacher-link {
+  position: absolute; right: 14px; bottom: 12px;
+  background: transparent; border: 1px solid #bbb; border-radius: 8px;
+  color: #777; font-size: 14px; padding: 6px 10px; touch-action: manipulation;
+}
+
+/* ===== S1 ===== */
+.s1 .topbar { flex: 0 0 auto; display: flex; align-items: center; gap: 14px; min-height: 60px; }
+.s1 .prompt { flex: 1 1 auto; font-size: 32px; font-weight: 700; line-height: 1.25; }
+.s1 .prompt .target { font-size: 42px; padding: 0 6px; border-bottom: 4px solid #333; }
+.btn.listen, .btn.hintbtn { flex: 0 0 auto; }
+.btn.hintbtn:disabled { opacity: 0.35; }
+.s1 .stage {
+  flex: 1 1 auto; min-height: 0;
+  display: grid; gap: 14px;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1.15fr) minmax(0, 1fr);
+}
+.s1 .stage.kind-text, .s1 .stage.kind-hour, .s1 .stage.kind-minute { grid-template-rows: minmax(0, 1fr) auto; }
+.s1 .stage.kind-make { grid-template-rows: minmax(0, 1fr) auto; }
+.s1 .stage.kind-period { grid-template-rows: minmax(0, 1fr) auto; }
+.s1 .stage.kind-clock, .s1 .stage.kind-scene { grid-template-rows: minmax(0, 0.8fr) minmax(0, 1.2fr); }
+@media (orientation: landscape) {
+  .s1 .stage, .s1 .stage.kind-text, .s1 .stage.kind-hour, .s1 .stage.kind-minute,
+  .s1 .stage.kind-make, .s1 .stage.kind-period, .s1 .stage.kind-clock, .s1 .stage.kind-scene {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+  }
+  .s1 .stage.kind-clock, .s1 .stage.kind-scene { grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); }
+}
+.stimulus { min-height: 0; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; }
+.clockbox { flex: 1 1 auto; min-height: 0; width: 100%; display: flex; align-items: center; justify-content: center; }
+.clockbox svg { width: 100%; height: 100%; }
+.make-clock { touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.hinttext { flex: 0 0 auto; display: flex; flex-wrap: wrap; gap: 6px 16px; justify-content: center; font-size: 22px; font-weight: 700; color: #7a2e00; }
+.hinttext span { border: 2px solid #e65100; border-radius: 10px; padding: 2px 10px; background: #fff; }
+.textcard { font-size: clamp(48px, 9vw, 96px); font-weight: 800; border: 4px solid #333; border-radius: 24px; background: #fff; padding: 12px 40px; }
+
+.responses { min-height: 0; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 14px; }
+.options { display: grid; gap: 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); height: 100%; max-height: 100%; }
+.kind-text .options, .kind-hour .options, .kind-minute .options { height: auto; grid-auto-rows: minmax(84px, auto); align-content: center; }
+.btn.textopt { font-size: 40px; min-height: 84px; }
+.btn.clockopt, .btn.sceneopt { min-height: 0; padding: 6px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.btn.clockopt svg { width: 100%; height: 100%; }
+.n2 .options, .n3 .options, .n4 .options { grid-auto-rows: minmax(0, 1fr); }
+.kind-text.n2 .options, .kind-hour.n2 .options, .kind-minute.n2 .options,
+.kind-text.n3 .options, .kind-hour.n3 .options, .kind-minute.n3 .options,
+.kind-text.n4 .options, .kind-hour.n4 .options, .kind-minute.n4 .options { grid-auto-rows: minmax(84px, auto); }
+
+.scene-card { display: grid; grid-template-rows: minmax(0, 1fr) auto; justify-items: center; align-items: center; gap: 4px; height: 100%; width: 100%; min-height: 0; }
+.scene-card.with-clock { grid-template-rows: minmax(0, 1fr) auto minmax(0, 0.9fr); }
+.scene-card.with-band { grid-template-rows: minmax(0, 1fr) auto auto; }
+.scene-card.with-clock.with-band { grid-template-rows: minmax(0, 1fr) auto minmax(0, 0.9fr) auto; }
+.stimulus .scene-card { background: #fff; border: 3px solid #333; border-radius: 20px; padding: 10px; }
+.scene-img, .scene-clock { min-height: 0; height: 100%; width: 100%; display: flex; align-items: center; justify-content: center; }
+.scene-img img, .scene-img svg, .scene-clock svg { width: 100%; height: 100%; object-fit: contain; }
+.scene-label { font-size: 28px; font-weight: 800; line-height: 1.2; text-align: center; }
+.sceneopt .scene-label { font-size: 22px; }
+.dayband { position: relative; width: 100%; max-width: 520px; display: flex; height: 40px; border: 3px solid #333; border-radius: 12px; overflow: hidden; font-weight: 800; font-size: 20px; flex: 0 0 auto; }
+.dayband .am { flex: 1; background: #fff6c8; display: flex; align-items: center; justify-content: center; }
+.dayband .pm { flex: 1; background: #d9dcf5; display: flex; align-items: center; justify-content: center; border-left: 3px solid #333; }
+.dayband .marker, .period-band .marker { position: absolute; top: 0; bottom: 0; width: 6px; margin-left: -3px; background: #e65100; }
+.period-band { position: relative; display: flex; gap: 0; width: 100%; }
+.btn.opt.period { flex: 1; min-height: 140px; border-radius: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; }
+.btn.opt.period.am { background: #fff6c8; border-radius: 18px 0 0 18px; }
+.btn.opt.period.pm { background: #d9dcf5; border-radius: 0 18px 18px 0; border-left-width: 0; }
+.btn.opt.period.selected { border-width: 7px; }
+.btn.opt.period.pm.selected { border-left-width: 7px; }
+.plabel { font-size: 40px; }
+.psub { font-size: 18px; font-weight: 600; }
+
+.hand-select { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.btn.handbtn { min-height: 84px; font-size: 28px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+.swatch { display: inline-block; border-radius: 4px; }
+.swatch.short { width: 34px; height: 14px; }
+.swatch.long { width: 54px; height: 8px; }
+
+.bottombar { flex: 0 0 auto; min-height: 80px; display: flex; align-items: center; gap: 14px; }
+.feedback { flex: 1 1 auto; display: flex; align-items: center; gap: 12px; font-size: 30px; font-weight: 700; }
+.feedback .soft { color: #444; }
+.maru { width: 60px; height: 60px; }
+.btn.helpbtn { font-size: 20px; min-height: 56px; }
+
+/* ===== S2 ===== */
+.s2 { align-items: center; justify-content: center; gap: 40px; }
+.s2-msg { font-size: 52px; font-weight: 800; margin: 0; text-align: center; }
+.s2-buttons { display: flex; gap: 30px; }
+
+/* ===== T0 ===== */
+.t0 { align-items: center; justify-content: center; gap: 16px; }
+.t0-note { color: #555; margin: 0; }
+.t0-q { font-size: 44px; font-weight: 800; margin: 0; }
+.t0-in { display: inline-block; min-width: 110px; border-bottom: 4px solid #333; text-align: center; }
+.keypad { display: grid; grid-template-columns: repeat(3, 100px); gap: 12px; }
+.btn.key { min-height: 70px; font-size: 30px; }
+.btn.key.ok { background: #e6f0ff; }
+
+/* ===== 教師画面 ===== */
+.tscreen { overflow-y: auto; -webkit-overflow-scrolling: touch; display: block; font-size: 17px; padding-bottom: 60px; }
+.tscreen h2 { margin: 0 12px 0 0; font-size: 24px; }
+.tscreen h3 { font-size: 18px; margin: 18px 0 8px; border-left: 6px solid #1565c0; padding-left: 8px; }
+.tscreen section { margin-bottom: 8px; }
+.tbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 8px; }
+.alert { background: #fff3e0; border: 2px solid #e65100; border-radius: 8px; padding: 8px 12px; margin: 8px 0; }
+.note, .small { font-size: 14px; color: #444; }
+.caution { font-size: 14px; color: #b71c1c; }
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 6px 0; }
+.addrow input[type=text] { font-size: 22px; width: 110px; padding: 6px; }
+.radios { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0; }
+.chip { display: inline-flex; align-items: center; gap: 4px; border: 1px solid #999; border-radius: 8px; padding: 6px 10px; background: #fff; }
+.chip input[type=radio], .chip input[type=checkbox] { width: 20px; height: 20px; }
+.swatchchip .sw { display: inline-block; width: 28px; height: 20px; border-radius: 4px; }
+.btn.preset.selected { border-width: 4px; }
+table { border-collapse: collapse; }
+.ptable td, .rtable td, .rtable th, .dtable td, .dtable th, .stable td { border-bottom: 1px solid #ddd; padding: 6px 8px; vertical-align: middle; text-align: left; }
+.pcode { font-size: 24px; font-weight: 800; }
+.acts { display: flex; flex-wrap: wrap; gap: 6px; }
+.rtable th.oc, .rtable td.oc { text-align: center; font-size: 13px; }
+.rtable tr.detail > td { background: #f5f7fa; }
+.dtable { font-size: 14px; }
+.diag .err { color: #b71c1c; font-weight: 700; }
+.diag .warn { color: #8a4b00; font-weight: 700; }
+.diag .ok { color: #1b5e20; }
+.preview { display: flex; align-items: center; gap: 12px; }
+.preview svg { width: 160px; height: 160px; }
+.stable .thumb { width: 96px; }
+.stable .thumb img, .stable .thumb svg { width: 88px; height: 88px; object-fit: cover; border-radius: 8px; }
+.slabel { font-size: 18px; width: 12em; padding: 4px; }
+.filebtn { position: relative; overflow: hidden; display: inline-flex; align-items: center; }
+.filebtn input[type=file] { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; font-size: 100px; }
+.help fieldset { border: 2px solid #999; border-radius: 10px; margin: 10px 0; }
+.help-actions { display: flex; flex-direction: column; gap: 10px; max-width: 560px; }
+.help-actions .btn { font-size: 20px; }
+select, input[type=text] { font-size: 17px; }
+.tscreen select { font-size: 18px; padding: 6px 8px; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script id="tokei-core">
+var TokeiCore = (function () {
+  'use strict';
+
+  // ===== 定数 =====
+  var SCHEMA_VERSION = 1;
+  var ALL_HOURS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+  var FIVE_MINUTES = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
+  var MINUTE_PRESETS = {
+    hour: [0],
+    half: [30],
+    hourAndHalf: [0, 30],
+    five: FIVE_MINUTES.slice(),
+    fiveSubset: null
+  };
+  var MINUTE_PRESET_LABELS = {
+    hour: '正時（00分）',
+    half: '30分のみ',
+    hourAndHalf: '正時＋30分',
+    five: '5分刻み',
+    fiveSubset: '5分の部分集合'
+  };
+
+  // answer: 正答の種類 / stimulus: 問題として見せるもの / optionKind: 選択肢の見た目
+  var TASKS = {
+    sameClock: { mode: 'A', label: '同じ時計を選ぶ（準備課題）', answer: 'time', stimulus: 'clock', optionKind: 'clock' },
+    selectShortHand: { mode: 'A', label: '短針を選ぶ（短針で何時か）', answer: 'hour', stimulus: 'clock', optionKind: 'hour' },
+    readMinute: { mode: 'A', label: '分だけを選ぶ', answer: 'minute', stimulus: 'clock', optionKind: 'minute' },
+    readTime: { mode: 'A', label: '時刻を読む', answer: 'time', stimulus: 'clock', optionKind: 'text' },
+    makeTime: { mode: 'B', label: '時計をつくる', answer: 'make', stimulus: 'text', optionKind: null },
+    analogToText: { mode: 'C', label: '時計 → 数字', answer: 'time', stimulus: 'clock', optionKind: 'text' },
+    textToAnalog: { mode: 'C', label: '数字 → 時計', answer: 'time', stimulus: 'text', optionKind: 'clock' },
+    clockToScene: { mode: 'D', label: '時計 → 活動', answer: 'scene', stimulus: 'clock', optionKind: 'scene' },
+    sceneToClock: { mode: 'D', label: '活動 → 時計', answer: 'sceneTime', stimulus: 'scene', optionKind: 'clock' },
+    periodFromScene: { mode: 'D', label: '生活場面 → 午前／午後', answer: 'period', stimulus: 'scene', optionKind: 'period' }
+  };
+  var TASK_ORDER = ['sameClock', 'selectShortHand', 'readMinute', 'readTime', 'makeTime',
+    'analogToText', 'textToAnalog', 'clockToScene', 'sceneToClock', 'periodFromScene'];
+  var MODE_LABELS = { A: 'A 時計を読む', B: 'B 時計をつくる', C: 'C 時計と数字', D: 'D 時計と生活' };
+
+  // 13-5 教師プリセット。プリセットは課題に関わる項目だけを上書きし、時・色・問題数などは残す。
+  var PRESETS = [
+    { id: 'miruAwaseru', label: 'みる・あわせる', hints: 'autoAfterError', set: { task: 'sameClock', minutePreset: 'hour' } },
+    { id: 'mijikaiHari', label: 'みじかいはり', hints: 'autoAfterError', set: { task: 'selectShortHand', minutePreset: 'hour' } },
+    { id: 'seijiYomu', label: 'せいじをよむ', hints: 'manual', set: { task: 'readTime', minutePreset: 'hour' } },
+    { id: 'seijiTsukuru', label: 'せいじをつくる', hints: 'manual', set: { task: 'makeTime', minutePreset: 'hour' } },
+    { id: 'zeroSanju', label: '00ぷん／30ぷん', hints: 'manual', set: { task: 'readMinute', minutePreset: 'hourAndHalf' } },
+    { id: 'sanjuYomuTsukuru', label: '30ぷんをよむ・つくる', hints: 'manual', set: { task: 'readTime', minutePreset: 'half' } },
+    { id: 'gofun', label: '5ふん', hints: 'manual', set: { task: 'readTime', minutePreset: 'five' } },
+    { id: 'seikatsu', label: 'せいかつ', hints: 'manual', set: { task: 'clockToScene', minutePreset: 'hour' } }
+  ];
+
+  var DEFAULT_SHORT_COLOR = '#c62828';
+  var DEFAULT_LONG_COLOR = '#1565c0';
+
+  var HOUR_READINGS = {
+    1: 'いちじ', 2: 'にじ', 3: 'さんじ', 4: 'よじ', 5: 'ごじ', 6: 'ろくじ',
+    7: 'しちじ', 8: 'はちじ', 9: 'くじ', 10: 'じゅうじ', 11: 'じゅういちじ', 12: 'じゅうにじ'
+  };
+  var MINUTE_READINGS = {
+    1: 'いっぷん', 2: 'にふん', 3: 'さんぷん', 4: 'よんぷん', 5: 'ごふん', 6: 'ろっぷん',
+    7: 'ななふん', 8: 'はっぷん', 9: 'きゅうふん', 10: 'じゅっぷん', 11: 'じゅういっぷん',
+    15: 'じゅうごふん', 20: 'にじゅっぷん', 25: 'にじゅうごふん', 30: 'さんじゅっぷん',
+    35: 'さんじゅうごふん', 40: 'よんじゅっぷん', 45: 'よんじゅうごふん', 50: 'ごじゅっぷん',
+    55: 'ごじゅうごふん'
+  };
+
+  // ===== 小道具 =====
+  function mod(a, n) { return ((a % n) + n) % n; }
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
+  function uniq(arr) {
+    var seen = {}, out = [];
+    for (var i = 0; i < arr.length; i++) {
+      var k = String(arr[i]);
+      if (!seen[k]) { seen[k] = true; out.push(arr[i]); }
+    }
+    return out;
+  }
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+  function makeRng(seed) { // mulberry32（テスト用に再現可能な乱数）
+    var a = seed >>> 0;
+    return function () {
+      a = (a + 0x6D2B79F5) >>> 0;
+      var t = a;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function shuffle(arr, rng) {
+    rng = rng || Math.random;
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(rng() * (i + 1));
+      var t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+
+  // ===== 時刻（time12 = 0〜719 が正本） =====
+  function norm12(t) { return mod(Math.round(t), 720); }
+  function normAngle(a) { return mod(a, 360); }
+  function hourIndex(t) { return Math.floor(norm12(t) / 60); } // 0〜11（0は12時）
+  function minuteOf(t) { return norm12(t) % 60; }
+  function displayHour(t) { var h = hourIndex(t); return h === 0 ? 12 : h; }
+  function makeTime(hourDisplay, minute) { return norm12(mod(hourDisplay, 12) * 60 + minute); }
+  function handAngles(t) {
+    t = norm12(t);
+    var m = t % 60, h = Math.floor(t / 60);
+    return { hour: 30 * h + 0.5 * m, minute: 6 * m };
+  }
+  function circDist(a, b) {
+    var d = Math.abs(norm12(a) - norm12(b));
+    return Math.min(d, 720 - d);
+  }
+
+  // ===== 表記・読み =====
+  function minuteSuffix(m) {
+    return ['ぷん', 'ぷん', 'ふん', 'ぷん', 'ぷん', 'ふん', 'ぷん', 'ふん', 'ぷん', 'ふん'][m % 10];
+  }
+  // 「3じ」と「3じ00ぷん」は同じ正規化値。表示は常に「3じ」に統一する。
+  function formatTime(t, fmt) {
+    var h = displayHour(t), m = minuteOf(t);
+    if (fmt === 'digital') return h + ':' + pad2(m);
+    return m === 0 ? h + 'じ' : h + 'じ' + m + minuteSuffix(m);
+  }
+  function formatMinute(m, fmt) {
+    if (fmt === 'digital') return pad2(m);
+    return pad2(m) + minuteSuffix(m);
+  }
+  function formatHour(h) { return h + 'じ'; }
+  function readingOfHour(h) { return HOUR_READINGS[h]; }
+  function readingOfMinute(m) {
+    if (m === 0) return '';
+    if (MINUTE_READINGS[m]) return MINUTE_READINGS[m];
+    return String(m) + minuteSuffix(m);
+  }
+  function readingOfTime(t) {
+    var h = displayHour(t), m = minuteOf(t);
+    return m === 0 ? HOUR_READINGS[h] : HOUR_READINGS[h] + ' ' + readingOfMinute(m);
+  }
+  function formatTeacherTime(t) { return displayHour(t) + ':' + pad2(minuteOf(t)); }
+  function formatMinuteOfDay(md) {
+    var h = Math.floor(md / 60), m = md % 60;
+    return (md < 720 ? '午前' : '午後') + (h % 12) + ':' + pad2(m) + '（' + h + ':' + pad2(m) + '）';
+  }
+
+  // ===== 設定 =====
+  function defaultSettings() {
+    return {
+      schemaVersion: SCHEMA_VERSION,
+      updatedAt: new Date().toISOString(),
+      presetId: null,
+      mode: 'A',
+      task: 'readTime',
+      minutePreset: 'hour',
+      allowedMinutes: [0],
+      allowedHours: [3, 6, 9],
+      questionCount: 5,
+      optionCount: 2,
+      timeFormat: 'kana',
+      distractorType: 'common',
+      hints: 'manual',
+      audio: false,
+      showMinuteRing: false,
+      handStyle: 'twoColor',
+      shortColor: DEFAULT_SHORT_COLOR,
+      longColor: DEFAULT_LONG_COLOR,
+      constructionInput: 'dragAndTap',
+      showSceneClockModel: false,
+      includePeriod: false,
+      sceneIds: []
+    };
+  }
+  function normalizeSettings(s) {
+    var d = defaultSettings();
+    var out = {};
+    Object.keys(d).forEach(function (k) { out[k] = (s && s[k] !== undefined) ? s[k] : d[k]; });
+    if (!TASKS[out.task]) out.task = d.task;
+    out.mode = TASKS[out.task].mode;
+    if (!(out.minutePreset in MINUTE_PRESETS)) out.minutePreset = 'hour';
+    if (MINUTE_PRESETS[out.minutePreset]) out.allowedMinutes = MINUTE_PRESETS[out.minutePreset].slice();
+    out.allowedHours = allowedHoursOf(out);
+    if ([3, 5, 10].indexOf(Number(out.questionCount)) < 0) out.questionCount = 5;
+    out.questionCount = Number(out.questionCount);
+    if ([2, 3, 4].indexOf(Number(out.optionCount)) < 0) out.optionCount = 2;
+    out.optionCount = Number(out.optionCount);
+    out.schemaVersion = SCHEMA_VERSION;
+    return out;
+  }
+  function applyPreset(settings, presetId) {
+    var p = null;
+    PRESETS.forEach(function (x) { if (x.id === presetId) p = x; });
+    if (!p) throw new Error('unknown preset ' + presetId);
+    var s = clone(settings);
+    Object.keys(p.set).forEach(function (k) { s[k] = p.set[k]; });
+    s.hints = p.hints;
+    s.presetId = p.id;
+    s.updatedAt = new Date().toISOString();
+    return normalizeSettings(s);
+  }
+  function allowedHoursOf(s) {
+    return uniq((s.allowedHours || []).map(Number).filter(function (h) {
+      return h >= 1 && h <= 12 && Math.floor(h) === h;
+    })).sort(function (a, b) { return a - b; });
+  }
+  function allowedMinutesOf(s) {
+    if (MINUTE_PRESETS[s.minutePreset]) return MINUTE_PRESETS[s.minutePreset].slice();
+    return uniq((s.allowedMinutes || []).map(Number).filter(function (m) {
+      return FIVE_MINUTES.indexOf(m) >= 0;
+    })).sort(function (a, b) { return a - b; });
+  }
+  function minuteStep(s) {
+    if (s.minutePreset === 'hour') return 60;
+    if (s.minutePreset === 'half' || s.minutePreset === 'hourAndHalf') return 30;
+    return 5;
+  }
+  function allowedTimes(s) {
+    var out = [];
+    allowedHoursOf(s).forEach(function (h) {
+      allowedMinutesOf(s).forEach(function (m) { out.push(makeTime(h, m)); });
+    });
+    return out;
+  }
+  function isTaughtTime(t, s) {
+    return allowedHoursOf(s).indexOf(displayHour(t)) >= 0 && allowedMinutesOf(s).indexOf(minuteOf(t)) >= 0;
+  }
+  function precisionCategory(t, s) {
+    if (s.minutePreset === 'five' || s.minutePreset === 'fiveSubset') return 'five';
+    if (s.minutePreset === 'hour') return 'hour';
+    return minuteOf(t) === 0 ? 'hour' : 'half';
+  }
+  function precisionOfTime(t) {
+    var m = minuteOf(t);
+    return m === 0 ? 'hour' : (m === 30 ? 'half' : 'five');
+  }
+
+  // ===== 生活場面 =====
+  function sceneTime12(sc) { return norm12(sc.minuteOfDay % 720); }
+  function scenePeriod(sc) { return sc.minuteOfDay < 720 ? 'am' : 'pm'; }
+  // 0:00 と 12:00 ちょうどは午前・午後の言い方が分かれるため、午前／午後課題には使わない
+  function periodEligible(sc) { return sc.minuteOfDay % 720 !== 0; }
+  function sessionScenes(s, scenes) {
+    var ids = s.sceneIds || [];
+    return (scenes || []).filter(function (sc) {
+      return sc.active && (ids.length === 0 || ids.indexOf(sc.id) >= 0);
+    });
+  }
+
+  // ===== 誤答候補 =====
+  // 8-4 よくある誤答（未習かどうかは呼び出し側でふるい分ける）
+  function commonTimeErrors(t) {
+    var h = displayHour(t), m = minuteOf(t), out = [];
+    if (m === 0) {
+      out.push(makeTime(12, 0));      // 長針の12を「12じ」と読む
+      out.push(makeTime(h - 1, 0));
+      out.push(makeTime(h + 1, 0));
+    } else if (m === 30) {
+      out.push(makeTime(h + 1, 30));  // 次の数字を読む
+      out.push(makeTime(h, 0));       // 分を落とす
+      out.push(makeTime(h, 6));       // 長針の数字6をそのまま分にする
+      out.push(makeTime(h - 1, 30));
+    } else {
+      out.push(makeTime(h, m / 5));   // 長針の数字をそのまま分にする（3じ4ぷん）
+      if (m - 5 >= 0) out.push(makeTime(h, m - 5));
+      if (m + 5 <= 55) out.push(makeTime(h, m + 5));
+      out.push(makeTime(h + 1, m));
+      out.push(makeTime(h - 1, m));
+    }
+    t = norm12(t);
+    return uniq(out).filter(function (x) { return x !== t; });
+  }
+  function orderByFar(values, distFn, rng) {
+    var sh = shuffle(values, rng);
+    var withIdx = sh.map(function (v, i) { return { v: v, i: i, d: distFn(v) }; });
+    withIdx.sort(function (a, b) { return (b.d - a.d) || (a.i - b.i); });
+    return withIdx.map(function (x) { return x.v; });
+  }
+  function preferThenRest(common, taught, extended, rng) {
+    var pref = extended ? common : common.filter(function (x) { return taught.indexOf(x) >= 0; });
+    var rest = taught.filter(function (x) { return pref.indexOf(x) < 0; });
+    return shuffle(pref, rng).concat(shuffle(rest, rng));
+  }
+  function timeDistractorPool(target, s, rng) {
+    target = norm12(target);
+    var taught = allowedTimes(s).filter(function (x) { return x !== target; });
+    if (s.distractorType === 'easy') {
+      return orderByFar(taught, function (x) { return circDist(x, target); }, rng);
+    }
+    return preferThenRest(commonTimeErrors(target), taught, s.distractorType === 'commonExtended', rng);
+  }
+  function hourDistractorPool(target, s, rng) {
+    var h = displayHour(target), m = minuteOf(target);
+    var taught = allowedHoursOf(s).filter(function (x) { return x !== h; });
+    if (s.distractorType === 'easy') {
+      return orderByFar(taught, function (x) { var d = Math.abs(x - h); return Math.min(d, 12 - d); }, rng);
+    }
+    var common = [mod(h, 12) + 1, mod(h - 2, 12) + 1];
+    var longNum = m === 0 ? 12 : m / 5;
+    if (longNum === Math.floor(longNum)) common.push(longNum);
+    common = uniq(common).filter(function (x) { return x !== h; });
+    return preferThenRest(common, taught, s.distractorType === 'commonExtended', rng);
+  }
+  function minuteDistractorPool(target, s, rng) {
+    var m = minuteOf(target);
+    var taught = allowedMinutesOf(s).filter(function (x) { return x !== m; });
+    if (s.distractorType === 'easy') {
+      return orderByFar(taught, function (x) { var d = Math.abs(x - m); return Math.min(d, 60 - d); }, rng);
+    }
+    var common = [];
+    if (m % 30 !== 0) { if (m - 5 >= 0) common.push(m - 5); if (m + 5 <= 55) common.push(m + 5); }
+    if (m === 30) common.push(0);
+    if (m === 0) common.push(30);
+    if (m / 5 !== m && m / 5 === Math.floor(m / 5)) common.push(m / 5);
+    common = uniq(common).filter(function (x) { return x !== m; });
+    return preferThenRest(common, taught, s.distractorType === 'commonExtended', rng);
+  }
+  // 同じ時計位置（time12）の活動は同じ選択肢セットに出さない
+  function sceneDistractorPool(targetScene, pool, rng) {
+    var tt = sceneTime12(targetScene);
+    var used = {}; used[tt] = true;
+    var out = [];
+    shuffle(pool, rng).forEach(function (sc) {
+      var k = sceneTime12(sc);
+      if (sc.id === targetScene.id || used[k]) return;
+      used[k] = true;
+      out.push(sc.id);
+    });
+    return out;
+  }
+  function sceneTimeDistractorPool(targetScene, pool, s, rng) {
+    var tt = sceneTime12(targetScene);
+    var fromScenes = uniq(shuffle(pool, rng).map(sceneTime12)).filter(function (x) { return x !== tt; });
+    var rest = timeDistractorPool(tt, s, rng).filter(function (x) {
+      return fromScenes.indexOf(x) < 0 && isTaughtTime(x, s);
+    });
+    return fromScenes.concat(rest);
+  }
+
+  function answerValueOf(task, item) {
+    var kind = TASKS[task].answer;
+    if (kind === 'hour') return displayHour(item);
+    if (kind === 'minute') return minuteOf(item);
+    if (kind === 'scene') return item.id;
+    if (kind === 'sceneTime') return sceneTime12(item);
+    if (kind === 'period') return scenePeriod(item);
+    return norm12(item);
+  }
+  function distractorPool(task, item, s, scenePool, rng) {
+    var kind = TASKS[task].answer;
+    if (kind === 'time') return timeDistractorPool(item, s, rng);
+    if (kind === 'hour') return hourDistractorPool(item, s, rng);
+    if (kind === 'minute') return minuteDistractorPool(item, s, rng);
+    if (kind === 'scene') return sceneDistractorPool(item, scenePool, rng);
+    if (kind === 'sceneTime') return sceneTimeDistractorPool(item, scenePool, s, rng);
+    if (kind === 'period') return [scenePeriod(item) === 'am' ? 'pm' : 'am'];
+    return [];
+  }
+
+  // ===== 出題対象 =====
+  function targetsFor(s, scenes) {
+    var task = TASKS[s.task];
+    if (task.mode === 'D') {
+      var pool = sessionScenes(s, scenes);
+      if (s.task === 'periodFromScene') {
+        return pool.filter(periodEligible).map(function (sc) { return { cat: scenePeriod(sc), item: sc, key: sc.id }; });
+      }
+      return pool.map(function (sc) { return { cat: sc.id, item: sc, key: sc.id }; });
+    }
+    var out = [];
+    allowedMinutesOf(s).forEach(function (m) {
+      allowedHoursOf(s).forEach(function (h) {
+        var t = makeTime(h, m);
+        out.push({ cat: 'm' + m, item: t, key: String(t) });
+      });
+    });
+    return out;
+  }
+  function capacity(s, scenes) {
+    s = normalizeSettings(s);
+    var ts = targetsFor(s, scenes);
+    if (!ts.length) return 0;
+    if (s.task === 'makeTime') return Infinity;
+    if (s.task === 'periodFromScene') return 2;
+    var pool = sessionScenes(s, scenes);
+    var rng = makeRng(1);
+    var min = Infinity;
+    ts.forEach(function (x) {
+      var n = 1 + distractorPool(s.task, x.item, s, pool, rng).length;
+      if (n < min) min = n;
+    });
+    return min;
+  }
+  function diagnose(s, scenes) {
+    s = normalizeSettings(s);
+    var errors = [], warnings = [], notes = [];
+    var task = TASKS[s.task];
+    if (task.mode !== 'D') {
+      if (!allowedHoursOf(s).length) errors.push('「時」を1つ以上選んでください。');
+      if (!allowedMinutesOf(s).length) errors.push('「分」を1つ以上選んでください。');
+    } else {
+      var pool = sessionScenes(s, scenes);
+      if (!pool.length) errors.push('使える日課カードがありません（T2で有効にするか、この記号で使うカードを選んでください）。');
+      if (s.task === 'periodFromScene') {
+        var el = pool.filter(periodEligible);
+        if (pool.length && !el.length) errors.push('午前／午後の課題に使えるカードがありません（0:00・12:00ちょうどのカードは使いません）。');
+        var am = el.filter(function (x) { return scenePeriod(x) === 'am'; }).length;
+        if (el.length && (am === 0 || am === el.length)) warnings.push('午前か午後の一方のカードしかないため、答えが片方にかたよります。');
+        if (pool.length !== el.length) notes.push('0:00・12:00ちょうどのカードは午前／午後の課題には出しません。');
+      }
+    }
+    var targetCount = targetsFor(s, scenes).length;
+    var cap = errors.length ? 0 : capacity(s, scenes);
+    var effective = s.optionCount;
+    if (!errors.length && s.task !== 'makeTime') {
+      if (s.task === 'periodFromScene') {
+        effective = 2;
+        if (s.optionCount !== 2) notes.push('午前／午後の課題は、つねに2択（ごぜん・ごご）です。');
+      } else if (cap < 2) {
+        errors.push('この条件では選択肢を2つ作れません（正答以外に使える候補がありません）。「時」や「分」を増やすか、誤答の種類を変えてください。');
+      } else if (cap < s.optionCount) {
+        effective = cap;
+        warnings.push('この条件では' + cap + '択までです。' + s.optionCount + '択ではなく' + cap + '択で出題します。');
+      }
+    }
+    if (!errors.length && targetCount > 0 && targetCount < s.questionCount) {
+      warnings.push('問題の種類が' + targetCount + '個なので、' + s.questionCount + '問の中で同じ問題がくり返し出ます（連続はしません' + (targetCount === 1 ? '。ただし1種類しかないため連続します' : '') + '）。');
+    }
+    if (s.distractorType === 'commonExtended' && task.mode !== 'D' && s.task !== 'makeTime') {
+      notes.push('「よくある誤り（未習の数字も使う）」なので、設定外の時・分（例：3じ6ぷん）も誤答に出ます。');
+    }
+    return { errors: errors, warnings: warnings, notes: notes, capacity: cap, optionCount: effective, targetCount: targetCount };
+  }
+
+  // ===== 出題列 =====
+  function balancedSequence(values, n, rng) {
+    var k = values.length, out = [];
+    if (!k) return out;
+    var base = Math.floor(n / k), extra = n % k;
+    var extras = shuffle(values, rng).slice(0, extra);
+    values.forEach(function (v) {
+      var cnt = base + (extras.indexOf(v) >= 0 ? 1 : 0);
+      for (var i = 0; i < cnt; i++) out.push(v);
+    });
+    return shuffle(out, rng);
+  }
+  function repairAdjacent(arr, keyFn) {
+    var a = arr.slice();
+    function k(i) { return (i < 0 || i >= a.length) ? null : keyFn(a[i]); }
+    for (var i = 1; i < a.length; i++) {
+      if (k(i) !== k(i - 1)) continue;
+      for (var j = 0; j < a.length; j++) {
+        if (j === i || j === i - 1) continue;
+        var ki = k(i), kj = k(j);
+        if (kj === ki) continue;
+        var okI = kj !== k(i - 1) && (i + 1 === j ? true : kj !== k(i + 1));
+        var okJ = (j - 1 === i ? true : ki !== k(j - 1)) && (j + 1 === i ? true : ki !== k(j + 1));
+        if (okI && okJ) { var t = a[i]; a[i] = a[j]; a[j] = t; break; }
+      }
+    }
+    return a;
+  }
+  function pickTargets(targets, n, rng) {
+    var byCat = {}, cats = [];
+    targets.forEach(function (x) {
+      if (!byCat[x.cat]) { byCat[x.cat] = []; cats.push(x.cat); }
+      byCat[x.cat].push(x);
+    });
+    var best = null;
+    // 直前と同じ問題にならない並びを作る（数回やり直し、だめなら入れ替えで補正）
+    for (var attempt = 0; attempt < 60; attempt++) {
+      var catSeq = balancedSequence(cats, n, rng);
+      var bags = {}, out = [], prev = null;
+      catSeq.forEach(function (c) {
+        if (!bags[c] || !bags[c].length) bags[c] = shuffle(byCat[c], rng);
+        var bag = bags[c], idx = 0;
+        if (prev && bag.length > 1 && bag[0].key === prev.key) idx = 1;
+        var it = bag.splice(idx, 1)[0];
+        out.push(it); prev = it;
+      });
+      out = repairAdjacent(out, function (x) { return x.key; });
+      var adj = countAdjacent(out);
+      if (!best || adj < best.adj) best = { out: out, adj: adj };
+      if (adj === 0) break;
+    }
+    return best.out;
+  }
+  function countAdjacent(a) {
+    var c = 0;
+    for (var i = 1; i < a.length; i++) if (a[i].key === a[i - 1].key) c++;
+    return c;
+  }
+
+  var qCounter = 0;
+  function newId(prefix) {
+    qCounter++;
+    return prefix + Date.now().toString(36) + '-' + qCounter.toString(36) + '-' + Math.floor(Math.random() * 1e6).toString(36);
+  }
+
+  function generateSession(settings, scenes, rng) {
+    rng = rng || Math.random;
+    var s = normalizeSettings(settings);
+    var diag = diagnose(s, scenes);
+    if (diag.errors.length) return { ok: false, errors: diag.errors, warnings: diag.warnings, questions: [] };
+    var targets = targetsFor(s, scenes);
+    var picks = pickTargets(targets, s.questionCount, rng);
+    var nOpt = s.task === 'makeTime' ? 0 : diag.optionCount;
+    var positions = nOpt ? balancedSequence(range(nOpt), picks.length, rng) : [];
+    var pool = sessionScenes(s, scenes);
+    var questions = picks.map(function (p, i) {
+      return buildQuestion(s, p.item, nOpt, positions[i], pool, rng);
+    });
+    return { ok: true, errors: [], warnings: diag.warnings, questions: questions, optionCount: nOpt };
+  }
+  function range(n) { var a = []; for (var i = 0; i < n; i++) a.push(i); return a; }
+
+  function buildQuestion(s, item, nOpt, correctPos, scenePool, rng) {
+    var task = TASKS[s.task];
+    var q = {
+      id: newId('q'),
+      task: s.task,
+      targetTime12: null,
+      targetMinuteOfDay: null,
+      targetSceneId: null,
+      targetPeriod: null,
+      options: [],
+      correctOptionId: null,
+      initialTime12: null,
+      precisionCategory: null,
+      hintCategory: null,
+      conditionSnapshot: {
+        minutePreset: s.minutePreset,
+        allowedMinutes: allowedMinutesOf(s),
+        allowedHours: allowedHoursOf(s),
+        optionCount: nOpt,
+        distractorType: s.distractorType,
+        timeFormat: s.timeFormat,
+        hints: s.hints
+      }
+    };
+    if (task.mode === 'D') {
+      q.targetSceneId = item.id;
+      q.targetMinuteOfDay = item.minuteOfDay;
+      q.targetTime12 = sceneTime12(item);
+      q.targetPeriod = scenePeriod(item);
+      q.precisionCategory = precisionOfTime(q.targetTime12);
+    } else {
+      q.targetTime12 = norm12(item);
+      q.precisionCategory = precisionCategory(q.targetTime12, s);
+    }
+    q.hintCategory = s.task === 'makeTime' ? 'make' : (s.task === 'periodFromScene' ? 'period' : q.precisionCategory);
+
+    if (s.task === 'makeTime') {
+      q.initialTime12 = q.targetTime12 === 0 ? 360 : 0; // 12:00 から始める（目標が12:00なら6:00）
+      return q;
+    }
+    var answer = answerValueOf(s.task, item);
+    var values;
+    if (s.task === 'periodFromScene') {
+      values = ['am', 'pm']; // 一日の帯の左右（午前・午後）は入れ替えない
+    } else {
+      var d = distractorPool(s.task, item, s, scenePool, rng);
+      var chosen = shuffle(d.slice(0, nOpt - 1), rng);
+      values = chosen.slice();
+      values.splice(Math.min(correctPos, values.length), 0, answer);
+    }
+    values = uniqueValues(values, answer);
+    q.options = values.map(function (v, i) { return { id: 'o' + (i + 1), value: v }; });
+    q.options.forEach(function (o) { if (String(o.value) === String(answer)) q.correctOptionId = o.id; });
+    return q;
+  }
+  function uniqueValues(values, answer) {
+    // 念のため：同値の選択肢を落とす（正答は必ず残す）
+    var seen = {}, out = [];
+    values.forEach(function (v) {
+      var k = String(v);
+      if (seen[k]) return;
+      seen[k] = true; out.push(v);
+    });
+    if (out.map(String).indexOf(String(answer)) < 0) out.push(answer);
+    return out;
+  }
+
+  // ===== B 時計をつくる：針の操作 =====
+  // 指の位置 → 角度（12の位置を0°、時計回り、0〜360）
+  function angleFromPoint(x, y, cx, cy) {
+    var a = Math.atan2(x - cx, -(y - cy)) * 180 / Math.PI;
+    return normAngle(a);
+  }
+  // 9-3 短針ドラッグ：分による進み分を差し引いてから時台を決める
+  function hourIndexFromDrag(theta, minute) {
+    var t = normAngle(theta - 0.5 * minute);
+    return mod(Math.round(t / 30 + 1e-9), 12);
+  }
+  function applyShortDrag(time12, theta) {
+    var m = minuteOf(time12);
+    return norm12(hourIndexFromDrag(theta, m) * 60 + m);
+  }
+  // 9-3 タップ：タップした数字＝時台。分は保持。
+  function hourIndexFromTap(theta) { return mod(Math.round(normAngle(theta) / 30 + 1e-9), 12); }
+  function applyShortTap(time12, theta) {
+    var m = minuteOf(time12);
+    return norm12(hourIndexFromTap(theta) * 60 + m);
+  }
+  function snapMinute(minutesFloat, step) { return Math.round(minutesFloat / step) * step; }
+  // 9-4 長針タップ：時台は変えない（12付近を触っても時台はそのまま）
+  function applyLongTap(time12, theta, step) {
+    var m = mod(snapMinute(normAngle(theta) / 6, step), 60);
+    return norm12(hourIndex(time12) * 60 + m);
+  }
+  // 9-4 長針ドラッグ：連続ドラッグで12をまたいだ時だけ、回転方向に応じて時台を増減
+  function startLongDrag(time12, theta, step) {
+    var u = normAngle(theta);
+    if (snapMinute(u / 6, step) >= 60) u -= 360;
+    return { base: hourIndex(time12) * 60, u: u, prev: normAngle(theta), step: step };
+  }
+  function moveLongDrag(drag, theta) {
+    theta = normAngle(theta);
+    var d = theta - drag.prev;
+    if (d > 180) d -= 360;
+    if (d < -180) d += 360;
+    drag.u += d;
+    drag.prev = theta;
+    return norm12(drag.base + snapMinute(drag.u / 6, drag.step));
+  }
+
+  // ===== 結果 =====
+  var OUTCOME_LABELS = {
+    firstH0: '初回・ヒントなし',
+    retryH0: '再試行・ヒントなし',
+    afterHint: 'ヒント後（H1〜H2）',
+    imitation: '模倣（H3見本後）',
+    teacherSupported: '教師と（外部支援）',
+    incomplete: '未完'
+  };
+  var OUTCOME_ORDER = ['firstH0', 'retryH0', 'afterHint', 'imitation', 'teacherSupported', 'incomplete'];
+  function classifyOutcome(r) {
+    if (r.skipped || !r.solved) return 'incomplete';
+    if (r.externalSupport && r.externalSupport.length) return 'teacherSupported';
+    if (r.maxHint >= 3) return 'imitation';
+    if (r.maxHint >= 1) return 'afterHint';
+    return r.attempts.length <= 1 ? 'firstH0' : 'retryH0';
+  }
+
+  // ===== 教師入口（掛け算） =====
+  function makeGateProblem(prevKey, rng) {
+    rng = rng || Math.random;
+    for (var i = 0; i < 100; i++) {
+      var a = 2 + Math.floor(rng() * 8), b = 2 + Math.floor(rng() * 8);
+      var key = a + 'x' + b;
+      if (key !== prevKey) return { a: a, b: b, answer: a * b, key: key };
+    }
+    return { a: 2, b: 3, answer: 6, key: '2x3' };
+  }
+
+  // ===== 既定の日課カード =====
+  function defaultScenes() {
+    var list = [
+      ['okiru', 'おきる', 7 * 60, 'wake'],
+      ['gakkou', 'がっこうに つく', 9 * 60, 'school'],
+      ['kyushoku', 'きゅうしょく', 12 * 60, 'lunch'],
+      ['kaeru', 'かえる', 15 * 60, 'home'],
+      ['oyatsu', 'おやつ', 15 * 60 + 30, 'snack'],
+      ['bangohan', 'ばんごはん', 19 * 60, 'dinner'],
+      ['ofuro', 'おふろ', 20 * 60, 'bath'],
+      ['neru', 'ねる', 21 * 60, 'sleep']
+    ];
+    return list.map(function (x, i) {
+      return { id: 'sc-' + x[0], label: x[1], minuteOfDay: x[2], imageBlobId: null, icon: x[3], active: true, order: i };
+    });
+  }
+
+  return {
+    SCHEMA_VERSION: SCHEMA_VERSION, ALL_HOURS: ALL_HOURS, FIVE_MINUTES: FIVE_MINUTES,
+    MINUTE_PRESETS: MINUTE_PRESETS, MINUTE_PRESET_LABELS: MINUTE_PRESET_LABELS,
+    TASKS: TASKS, TASK_ORDER: TASK_ORDER, MODE_LABELS: MODE_LABELS, PRESETS: PRESETS,
+    OUTCOME_LABELS: OUTCOME_LABELS, OUTCOME_ORDER: OUTCOME_ORDER,
+    mod: mod, pad2: pad2, uniq: uniq, clone: clone, makeRng: makeRng, shuffle: shuffle,
+    norm12: norm12, normAngle: normAngle, hourIndex: hourIndex, minuteOf: minuteOf,
+    displayHour: displayHour, makeTime: makeTime, handAngles: handAngles, circDist: circDist,
+    formatTime: formatTime, formatMinute: formatMinute, formatHour: formatHour,
+    formatTeacherTime: formatTeacherTime, formatMinuteOfDay: formatMinuteOfDay,
+    readingOfTime: readingOfTime, readingOfHour: readingOfHour, readingOfMinute: readingOfMinute,
+    defaultSettings: defaultSettings, normalizeSettings: normalizeSettings, applyPreset: applyPreset,
+    allowedHoursOf: allowedHoursOf, allowedMinutesOf: allowedMinutesOf, allowedTimes: allowedTimes,
+    minuteStep: minuteStep, isTaughtTime: isTaughtTime, precisionCategory: precisionCategory,
+    precisionOfTime: precisionOfTime,
+    sceneTime12: sceneTime12, scenePeriod: scenePeriod, periodEligible: periodEligible, sessionScenes: sessionScenes,
+    commonTimeErrors: commonTimeErrors, distractorPool: distractorPool, targetsFor: targetsFor,
+    capacity: capacity, diagnose: diagnose, balancedSequence: balancedSequence,
+    generateSession: generateSession, answerValueOf: answerValueOf,
+    angleFromPoint: angleFromPoint, hourIndexFromDrag: hourIndexFromDrag, applyShortDrag: applyShortDrag,
+    hourIndexFromTap: hourIndexFromTap, applyShortTap: applyShortTap, applyLongTap: applyLongTap,
+    startLongDrag: startLongDrag, moveLongDrag: moveLongDrag, snapMinute: snapMinute,
+    classifyOutcome: classifyOutcome, makeGateProblem: makeGateProblem, defaultScenes: defaultScenes,
+    newId: newId
+  };
+})();
+if (typeof module !== 'undefined' && module.exports) module.exports = TokeiCore;
+</script>
+<script id="tokei-app">
+(function () {
+  'use strict';
+  var C = TokeiCore;
+  var LS = {
+    profiles: 'tokei.v1.profiles',
+    device: 'tokei.v1.device',
+    scenes: 'tokei.v1.scenes',
+    gate: 'tokei.v1.lastGate'
+  };
+  var MAX_PROFILES = 12;
+  var SUPPORT_TYPES = ['ゆびさし', 'ことばかけ', 'てをそえる', 'みほんを みせる'];
+  var COLOR_SWATCHES = ['#c62828', '#1565c0', '#222222', '#2e7d32', '#ef6c00', '#6a1b9a'];
+
+  var appEl = document.getElementById('app');
+  var state = {
+    profiles: [],
+    device: { skipCodeSelection: false, lastProfileId: null },
+    scenes: [],
+    warnings: [],
+    screen: 's0',
+    selectedProfileId: null,
+    run: null,
+    gate: null,
+    editProfileId: null,
+    t3: { code: '', date: '', openSession: null }
+  };
+
+  // ===== 共通 =====
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function warn(msg) { if (state.warnings.indexOf(msg) < 0) state.warnings.push(msg); }
+  function nowIso() { return new Date().toISOString(); }
+  function localDate(iso) {
+    var d = new Date(iso);
+    return d.getFullYear() + '-' + C.pad2(d.getMonth() + 1) + '-' + C.pad2(d.getDate());
+  }
+  function localDateTime(iso) {
+    var d = new Date(iso);
+    return localDate(iso) + ' ' + C.pad2(d.getHours()) + ':' + C.pad2(d.getMinutes());
+  }
+
+  // ===== 保存（設定：localStorage） =====
+  function lsGet(key, fallback) {
+    try {
+      var v = window.localStorage.getItem(key);
+      return v ? JSON.parse(v) : fallback;
+    } catch (e) {
+      warn('設定を読み込めませんでした（ブラウザの保存領域が使えない状態です）。');
+      return fallback;
+    }
+  }
+  function lsSet(key, val) {
+    try {
+      window.localStorage.setItem(key, JSON.stringify(val));
+      return true;
+    } catch (e) {
+      warn('設定を保存できませんでした（容量不足・プライベートブラウズ等）。学習は続けられますが、再読み込みすると消えます。');
+      return false;
+    }
+  }
+  function saveProfiles() { lsSet(LS.profiles, state.profiles); }
+  function saveDevice() { lsSet(LS.device, state.device); }
+  function saveScenes() { lsSet(LS.scenes, state.scenes); }
+  function sortedProfiles() {
+    return state.profiles.slice().sort(function (a, b) { return a.order - b.order; });
+  }
+  function findProfile(id) {
+    for (var i = 0; i < state.profiles.length; i++) if (state.profiles[i].id === id) return state.profiles[i];
+    return null;
+  }
+  function sortedScenes() {
+    return state.scenes.slice().sort(function (a, b) { return (a.order - b.order) || (a.minuteOfDay - b.minuteOfDay); });
+  }
+  function findScene(id) {
+    for (var i = 0; i < state.scenes.length; i++) if (state.scenes[i].id === id) return state.scenes[i];
+    return null;
+  }
+
+  // ===== 保存（画像・結果：IndexedDB） =====
+  var DB = { db: null, ok: false, mem: { images: {}, sessions: {} } };
+  function idbOpen() {
+    return new Promise(function (resolve) {
+      var req;
+      try {
+        if (!window.indexedDB) throw new Error('no indexedDB');
+        req = window.indexedDB.open('tokei-app', 1);
+      } catch (e) {
+        idbFail(); resolve(); return;
+      }
+      req.onupgradeneeded = function () {
+        var db = req.result;
+        if (!db.objectStoreNames.contains('images')) db.createObjectStore('images', { keyPath: 'id' });
+        if (!db.objectStoreNames.contains('sessions')) db.createObjectStore('sessions', { keyPath: 'id' });
+      };
+      req.onsuccess = function () { DB.db = req.result; DB.ok = true; resolve(); };
+      req.onerror = function () { idbFail(); resolve(); };
+      req.onblocked = function () { idbFail(); resolve(); };
+    });
+  }
+  function idbFail() {
+    DB.ok = false;
+    warn('結果・画像の保存領域（IndexedDB）が使えません。学習は続けられますが、結果と画像は再読み込みで消えます。');
+  }
+  function idbTx(store, mode, fn) {
+    return new Promise(function (resolve, reject) {
+      if (!DB.ok) { resolve(fn(null)); return; }
+      try {
+        var tx = DB.db.transaction(store, mode);
+        var os = tx.objectStore(store);
+        var out = fn(os);
+        tx.oncomplete = function () { resolve(out && out.result !== undefined && out.readyState ? out.result : out); };
+        tx.onerror = function () { reject(tx.error); };
+        tx.onabort = function () { reject(tx.error); };
+      } catch (e) { reject(e); }
+    });
+  }
+  function idbPut(store, obj) {
+    DB.mem[store][obj.id] = obj;
+    if (!DB.ok) return Promise.resolve();
+    return idbTx(store, 'readwrite', function (os) { os.put(obj); return null; }).catch(function () {
+      warn('結果・画像の保存に失敗しました（容量不足の可能性）。学習は続けられます。');
+    });
+  }
+  function idbGetAll(store) {
+    if (!DB.ok) {
+      var m = DB.mem[store];
+      return Promise.resolve(Object.keys(m).map(function (k) { return m[k]; }));
+    }
+    return idbTx(store, 'readonly', function (os) { return os.getAll(); }).then(function (r) {
+      return r || [];
+    }).catch(function () { warn('保存済みデータの読み込みに失敗しました。'); return []; });
+  }
+  function idbGet(store, id) {
+    if (DB.mem[store][id]) return Promise.resolve(DB.mem[store][id]);
+    if (!DB.ok) return Promise.resolve(null);
+    return idbTx(store, 'readonly', function (os) { return os.get(id); }).then(function (r) {
+      return r || null;
+    }).catch(function () { return null; });
+  }
+  function idbDelete(store, id) {
+    delete DB.mem[store][id];
+    if (!DB.ok) return Promise.resolve();
+    return idbTx(store, 'readwrite', function (os) { os.delete(id); return null; }).catch(function () {});
+  }
+
+  // 画像のURLキャッシュ
+  var imageUrls = {};
+  function loadImageUrls(ids) {
+    var need = ids.filter(function (id) { return id && !imageUrls[id]; });
+    return Promise.all(need.map(function (id) {
+      return idbGet('images', id).then(function (rec) {
+        if (rec && rec.blob) {
+          try { imageUrls[id] = URL.createObjectURL(rec.blob); } catch (e) { /* 画像なしで続行 */ }
+        }
+      });
+    }));
+  }
+
+  // ===== 時計SVG（全モード共通部品） =====
+  var CX = 120, CY = 120, R = 104;
+  function polar(angle, r) {
+    var rad = angle * Math.PI / 180;
+    return { x: CX + r * Math.sin(rad), y: CY - r * Math.cos(rad) };
+  }
+  function f1(n) { return Math.round(n * 100) / 100; }
+  function wedge(a1, a2, r1, r2, fill) {
+    var p1 = polar(a1, r2), p2 = polar(a2, r2), p3 = polar(a2, r1), p4 = polar(a1, r1);
+    var large = (a2 - a1) > 180 ? 1 : 0;
+    var d = 'M' + f1(p1.x) + ' ' + f1(p1.y) + ' A' + r2 + ' ' + r2 + ' 0 ' + large + ' 1 ' + f1(p2.x) + ' ' + f1(p2.y);
+    if (r1 > 0) d += ' L' + f1(p3.x) + ' ' + f1(p3.y) + ' A' + r1 + ' ' + r1 + ' 0 ' + large + ' 0 ' + f1(p4.x) + ' ' + f1(p4.y) + ' Z';
+    else d += ' L' + CX + ' ' + CY + ' Z';
+    return '<path d="' + d + '" fill="' + fill + '"/>';
+  }
+  function handSvg(angle, len, width, color, cls, emph, faded, ghost) {
+    var tip = polar(angle, len), tail = polar(angle + 180, 12);
+    var line = function (w, c, extra) {
+      return '<line x1="' + f1(tail.x) + '" y1="' + f1(tail.y) + '" x2="' + f1(tip.x) + '" y2="' + f1(tip.y) +
+        '" stroke="' + c + '" stroke-width="' + w + '" stroke-linecap="round"' + (extra || '') + '/>';
+    };
+    var s = '<g class="' + cls + '"' + (faded ? ' opacity="0.22"' : '') + (ghost ? ' opacity="0.35"' : '') + '>';
+    if (ghost) {
+      s += line(width, color, ' stroke-dasharray="6 5"');
+    } else {
+      if (emph) s += line(width + 12, '#111', '') + line(width + 6, '#fff', '');
+      s += line(emph ? width + 3 : width, color, '');
+    }
+    return s + '</g>';
+  }
+  // o: time12, shortColor, longColor, handStyle, minuteRing, hint(spec), ghostTime, targetTime
+  function clockSvg(o) {
+    var t = C.norm12(o.time12), ang = C.handAngles(t), hs = o.hint || {};
+    var mono = o.handStyle === 'mono';
+    var shortCol = mono ? '#222222' : (o.shortColor || '#c62828');
+    var longCol = mono ? '#222222' : (o.longColor || '#1565c0');
+    var hIdx = C.hourIndex(t), m = C.minuteOf(t);
+    var s = [];
+    s.push('<svg class="clock" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="とけい"' +
+      ' data-hour-angle="' + ang.hour + '" data-minute-angle="' + ang.minute + '">');
+    s.push('<circle cx="120" cy="120" r="' + R + '" fill="#ffffff" stroke="#222" stroke-width="4"/>');
+    if (hs.sectorHour != null) {
+      s.push(wedge(hs.sectorHour * 30, hs.sectorHour * 30 + 30, 0, R - 3, '#fff0a0'));
+    }
+    if (hs.fiveGroups) {
+      var groups = Math.round(m / 5);
+      for (var g = 0; g < groups; g++) {
+        s.push(wedge(g * 30, g * 30 + 30, R - 20, R - 3, g % 2 ? '#bfe0ff' : '#86c3f7'));
+      }
+    }
+    for (var i = 0; i < 60; i++) {
+      var big = i % 5 === 0;
+      var p1 = polar(i * 6, R - 3), p2 = polar(i * 6, big ? R - 14 : R - 8);
+      s.push('<line x1="' + f1(p1.x) + '" y1="' + f1(p1.y) + '" x2="' + f1(p2.x) + '" y2="' + f1(p2.y) +
+        '" stroke="#333" stroke-width="' + (big ? 3 : 1.4) + '"/>');
+    }
+    var circled = {};
+    (hs.circleNums || []).forEach(function (c) { circled[c.n] = c; });
+    (hs.targetNums || []).forEach(function (n) { circled[n] = circled[n] || { n: n, target: true }; });
+    for (var n = 1; n <= 12; n++) {
+      var p = polar(n * 30, 78);
+      if (circled[n]) {
+        s.push('<circle cx="' + f1(p.x) + '" cy="' + f1(p.y) + '" r="17" fill="none" stroke="' +
+          (circled[n].target ? '#6a1b9a' : '#e65100') + '" stroke-width="4"' + (circled[n].target ? ' stroke-dasharray="5 4"' : '') + '/>');
+      }
+      s.push('<text x="' + f1(p.x) + '" y="' + f1(p.y + 8.5) + '" text-anchor="middle" font-size="25" font-weight="700" fill="#111">' + n + '</text>');
+    }
+    Object.keys(circled).forEach(function (k) {
+      var c = circled[k];
+      if (!c.badge) return;
+      var bp = polar(Number(k) * 30, 58);
+      s.push('<circle cx="' + f1(bp.x) + '" cy="' + f1(bp.y) + '" r="9" fill="#e65100"/>' +
+        '<text x="' + f1(bp.x) + '" y="' + f1(bp.y + 4.5) + '" text-anchor="middle" font-size="13" font-weight="700" fill="#fff">' + c.badge + '</text>');
+    });
+    if (o.minuteRing || hs.minuteRing) {
+      for (var k = 0; k < 12; k++) {
+        var mp = polar(k * 30, 113);
+        s.push('<text x="' + f1(mp.x) + '" y="' + f1(mp.y + 4) + '" text-anchor="middle" font-size="11.5" font-weight="700" fill="#0d47a1">' + C.pad2(k * 5) + '</text>');
+      }
+    }
+    if (hs.fiveGroups) {
+      for (var g2 = 0; g2 < Math.round(m / 5); g2++) {
+        var gp = polar(g2 * 30 + 15, R - 11);
+        s.push('<text x="' + f1(gp.x) + '" y="' + f1(gp.y + 3.5) + '" text-anchor="middle" font-size="10" font-weight="700" fill="#0d2a4a">' + (g2 + 1) + '</text>');
+      }
+    }
+    if (hs.ray) {
+      var rp = polar(hIdx * 30, 60);
+      s.push('<line x1="120" y1="120" x2="' + f1(rp.x) + '" y2="' + f1(rp.y) + '" stroke="#e65100" stroke-width="4" stroke-dasharray="7 5" stroke-linecap="round"/>');
+    }
+    if (o.targetMinuteMark != null) {
+      var tp = polar(o.targetMinuteMark * 6, R + 1), tl = polar(o.targetMinuteMark * 6 - 5, R + 12), tr = polar(o.targetMinuteMark * 6 + 5, R + 12);
+      s.push('<path d="M' + f1(tp.x) + ' ' + f1(tp.y) + ' L' + f1(tl.x) + ' ' + f1(tl.y) + ' L' + f1(tr.x) + ' ' + f1(tr.y) + ' Z" fill="#6a1b9a"/>');
+    }
+    if (o.ghostTime != null) {
+      var ga = C.handAngles(o.ghostTime);
+      s.push(handSvg(ga.minute, 86, 7, longCol, 'ghost-long', false, false, true));
+      s.push(handSvg(ga.hour, 54, 11, shortCol, 'ghost-short', false, false, true));
+    }
+    s.push(handSvg(ang.hour, 54, 11, shortCol, 'hand-short', hs.emphShort, false, false));
+    s.push(handSvg(ang.minute, 86, 7, longCol, 'hand-long', hs.emphLong, hs.fadeLong, false));
+    s.push('<circle cx="120" cy="120" r="7" fill="#222"/>');
+    s.push('</svg>');
+    return s.join('');
+  }
+
+  // ===== ヒント（10-2）：すべて静的（太さ・輪郭・薄さ・囲み） =====
+  function clockHint(cat, level, t) {
+    var h = C.displayHour(t), hIdx = C.hourIndex(t), m = C.minuteOf(t);
+    var spec = { texts: [] };
+    if (!level) return spec;
+    if (cat === 'hour') {
+      spec.emphShort = true; spec.texts.push('みじかい はり');
+      if (level >= 2) { spec.fadeLong = true; spec.ray = true; }
+      if (level >= 3) {
+        spec.circleNums = [{ n: 12, badge: '1' }, { n: h, badge: '2' }];
+        spec.texts = ['① ながい はりは 12', '② みじかい はりは ' + h];
+      }
+    } else if (cat === 'half') {
+      spec.emphLong = true; spec.circleNums = [{ n: 6 }];
+      spec.texts.push('ながい はりが 6');
+      if (level >= 2) { spec.sectorHour = hIdx; spec.texts.push('みじかい はりは ' + h + ' と ' + (h % 12 + 1) + ' の あいだ'); }
+      if (level >= 3) { spec.texts = ['① ' + h + ' を すぎた', '② 30ぷん']; }
+    } else if (cat === 'five') {
+      spec.emphLong = true; spec.texts.push('ながい はり');
+      if (level >= 2) { spec.minuteRing = true; spec.texts.push('そとの すうじを みよう'); }
+      if (level >= 3) {
+        spec.fiveGroups = true; spec.sectorHour = hIdx;
+        spec.texts = ['① 5ずつ かぞえる', '② みじかい はりは ' + h + ' を すぎた'];
+      }
+    }
+    return spec;
+  }
+
+  // ===== 画面切替 =====
+  function render() {
+    var fn = SCREENS[state.screen] || renderS0;
+    document.body.setAttribute('data-screen', state.screen);
+    fn();
+  }
+  function go(screen) { state.screen = screen; render(); }
+
+  // ===== S0 開始 =====
+  function renderS0() {
+    var profs = sortedProfiles();
+    var html = '<div class="screen s0">';
+    html += '<h1 class="title">とけいを よもう</h1>';
+    if (!profs.length) {
+      html += '<p class="s0-msg">せんせいに じゅんびを してもらってね</p>';
+    } else if (state.device.skipCodeSelection) {
+      html += '<div class="s0-center"><button class="btn big start" data-action="start">はじめる</button></div>';
+    } else {
+      html += '<p class="s0-msg">じぶんの きごうを えらんでね</p><div class="codes n' + profs.length + '">';
+      profs.forEach(function (p) {
+        var sel = state.selectedProfileId === p.id;
+        html += '<button class="btn code' + (sel ? ' selected' : '') + '" data-action="pickCode" data-id="' + esc(p.id) + '" aria-pressed="' + sel + '">' + esc(p.code) + '</button>';
+      });
+      html += '</div><div class="s0-center"><button class="btn big start" data-action="start"' + (state.selectedProfileId ? '' : ' disabled') + '>はじめる</button></div>';
+    }
+    html += '<button class="teacher-link" data-action="openGate" data-route="teacher">せんせい</button>';
+    html += '</div>';
+    appEl.innerHTML = html;
+  }
+
+  // ===== セッション =====
+  function startSession(profile) {
+    var settings = C.normalizeSettings(profile.settings);
+    var scenes = sortedScenes();
+    var gen = C.generateSession(settings, scenes);
+    state.device.lastProfileId = profile.id;
+    saveDevice();
+    if (!gen.ok) {
+      state.run = null;
+      appEl.innerHTML = '<div class="screen s2"><p class="s2-msg">いまは できません。<br>せんせいを よんでね</p>' +
+        '<div class="s2-buttons"><button class="btn big" data-action="toS0">もどる</button></div></div>';
+      document.body.setAttribute('data-screen', 'blocked');
+      return;
+    }
+    var pool = C.sessionScenes(settings, scenes);
+    var sceneSnapshots = pool.map(function (sc) {
+      return { id: sc.id, label: sc.label, minuteOfDay: sc.minuteOfDay, imageBlobId: sc.imageBlobId, icon: sc.icon };
+    });
+    var session = {
+      id: C.newId('s'),
+      profileId: profile.id,
+      profileCodeSnapshot: profile.code,
+      localStartedAt: nowIso(),
+      localEndedAt: null,
+      settingsSnapshot: C.clone(settings),
+      sceneSnapshots: sceneSnapshots,
+      questions: gen.questions,
+      status: 'inProgress',
+      results: []
+    };
+    state.run = {
+      profile: profile,
+      settings: settings,
+      session: session,
+      idx: -1,
+      scenes: {},
+      q: null,
+      r: null
+    };
+    sceneSnapshots.forEach(function (sc) { state.run.scenes[sc.id] = sc; });
+    loadImageUrls(sceneSnapshots.map(function (x) { return x.imageBlobId; })).then(function () {
+      nextQuestion();
+    });
+  }
+  function saveSession() {
+    if (!state.run) return;
+    idbPut('sessions', C.clone(state.run.session));
+  }
+  function nextQuestion() {
+    var run = state.run;
+    run.idx++;
+    if (run.idx >= run.session.questions.length) {
+      run.session.status = 'completed';
+      run.session.localEndedAt = nowIso();
+      saveSession();
+      go('s2');
+      return;
+    }
+    var q = run.session.questions[run.idx];
+    var s = run.settings;
+    run.q = q;
+    run.r = {
+      questionId: q.id,
+      task: q.task,
+      precisionCategory: q.precisionCategory,
+      attempts: [],
+      hintsShown: [],
+      maxHint: 0,
+      finalOutcome: null,
+      constantSupports: constantSupportsOf(s),
+      externalSupport: [],
+      inputMethod: q.task === 'makeTime' ? [] : 'choice',
+      solved: false,
+      skipped: false
+    };
+    run.session.results[run.idx] = run.r;
+    run.state = 'answering';
+    run.errors = 0;
+    run.hintLevel = 0;
+    run.current = q.initialTime12;
+    run.selectedHand = 'short';
+    run.renderedAt = performance.now();
+    run.qStart = Date.now();
+    run.lockUntilRelease = pointersDown > 0;
+    saveSession();
+    go('s1');
+  }
+  function constantSupportsOf(s) {
+    var out = [];
+    if (s.showMinuteRing) out.push('外周の分の数字');
+    if (C.TASKS[s.task].mode === 'D' && s.showSceneClockModel) out.push('場面カードに時計見本');
+    if (C.TASKS[s.task].mode === 'D' && s.includePeriod) out.push('午前・午後の帯');
+    if (s.audio) out.push('音声ボタン');
+    return out;
+  }
+
+  // ===== 入力ロック（13-8：切替前からのタッチを新しい問題に入れない） =====
+  var pointersDown = 0, lastPointerDownAt = -1;
+  document.addEventListener('pointerdown', function () {
+    pointersDown++; lastPointerDownAt = performance.now();
+  }, true);
+  function pointerRelease() {
+    pointersDown = Math.max(0, pointersDown - 1);
+    if (pointersDown === 0 && state.run) state.run.lockUntilRelease = false;
+  }
+  document.addEventListener('pointerup', pointerRelease, true);
+  document.addEventListener('pointercancel', pointerRelease, true);
+  function inputBlocked() {
+    var run = state.run;
+    if (!run) return true;
+    if (run.lockUntilRelease) return true;
+    // この操作のタッチが問題表示より前に始まっていたら無視する
+    if (lastPointerDownAt >= 0 && lastPointerDownAt < run.renderedAt && performance.now() - lastPointerDownAt < 3000) return true;
+    return false;
+  }
+
+  // ===== S1 課題 =====
+  function promptOf(q, s) {
+    var fmt = s.timeFormat;
+    switch (q.task) {
+      case 'sameClock': return { text: 'おなじ とけいは どれ？', speak: 'おなじ とけいは どれ' };
+      case 'selectShortHand': return { text: 'みじかい はりを みて。なんじ？', speak: 'みじかい はりを みて。なんじ' };
+      case 'readMinute': return { text: 'ながい はりを みて。なんぷん？', speak: 'ながい はりを みて。なんぷん' };
+      case 'readTime': return { text: 'とけいは なんじ？', speak: 'とけいは なんじ' };
+      case 'makeTime': return { text: '<span class="target">' + esc(C.formatTime(q.targetTime12, fmt)) + '</span> に しよう', speak: C.readingOfTime(q.targetTime12) + ' に しよう' };
+      case 'analogToText': return { text: 'とけいと おなじ じかんは どれ？', speak: 'とけいと おなじ じかんは どれ' };
+      case 'textToAnalog': return { text: 'この じかんの とけいは どれ？', speak: C.readingOfTime(q.targetTime12) + ' の とけいは どれ' };
+      case 'clockToScene': return { text: 'この じかんに すること は どれ？', speak: 'この じかんに すること は どれ' };
+      case 'sceneToClock': return { text: 'この ときの とけいは どれ？', speak: sceneOf(q.targetSceneId).label + ' の とけいは どれ' };
+      case 'periodFromScene': return { text: 'ごぜん？ ごご？', speak: sceneOf(q.targetSceneId).label + ' は ごぜん かな、ごご かな' };
+    }
+    return { text: '', speak: '' };
+  }
+  function sceneOf(id) { return (state.run && state.run.scenes[id]) || { label: '', minuteOfDay: 0, icon: 'wake' }; }
+  function clockOpts(time12, extra) {
+    var s = state.run.settings;
+    var o = { time12: time12, shortColor: s.shortColor, longColor: s.longColor, handStyle: s.handStyle, minuteRing: s.showMinuteRing };
+    if (extra) Object.keys(extra).forEach(function (k) { o[k] = extra[k]; });
+    return o;
+  }
+  function readingHint() {
+    var run = state.run;
+    return clockHint(run.q.hintCategory, run.hintLevel, run.q.targetTime12);
+  }
+
+  function renderS1() {
+    var run = state.run, q = run.q, s = run.settings;
+    var task = C.TASKS[q.task];
+    var pr = promptOf(q, s);
+    var done = run.state === 'correct';
+    var showHintBtn = s.hints === 'manual' || (s.hints === 'autoAfterError' && run.errors >= 2);
+    var html = '<div class="screen s1 task-' + q.task + (done ? ' is-correct' : '') + '" data-state="' + run.state + '">';
+    html += '<div class="topbar">';
+    if (s.audio) html += '<button class="btn listen" data-action="speak">きく</button>';
+    html += '<div class="prompt">' + pr.text + '</div>';
+    if (showHintBtn) html += '<button class="btn hintbtn" data-action="hint"' + (run.hintLevel >= 3 || done ? ' disabled' : '') + '>ヒント</button>';
+    html += '</div>';
+
+    var optKind = task.optionKind;
+    html += '<div class="stage kind-' + (q.task === 'makeTime' ? 'make' : optKind) + ' n' + q.options.length + '">';
+    html += '<div class="stimulus">' + stimulusHtml(q, s) + '</div>';
+    html += '<div class="responses">' + responsesHtml(q, s) + '</div>';
+    html += '</div>';
+
+    html += '<div class="bottombar"><div class="feedback" aria-live="polite">' + feedbackHtml() + '</div>';
+    if (!done && (run.errors >= 2 || run.state === 'teacherHelp')) {
+      html += '<button class="btn helpbtn" data-action="openGate" data-route="help">せんせいと</button>';
+    }
+    if (q.task === 'makeTime' && !done) {
+      html += '<button class="btn big done-btn" data-action="submitMake">できた</button>';
+    }
+    if (done) html += '<button class="btn big next" data-action="next">つぎへ</button>';
+    html += '</div></div>';
+    appEl.innerHTML = html;
+    if (q.task === 'makeTime') bindMakeClock();
+  }
+  function feedbackHtml() {
+    var run = state.run;
+    if (run.state === 'correct') {
+      return '<svg class="maru" viewBox="0 0 60 60" aria-hidden="true"><circle cx="30" cy="30" r="22" fill="none" stroke="#c62828" stroke-width="6"/></svg><span>できたね</span>';
+    }
+    if (run.state === 'teacherHelp') return '<span class="soft">せんせいと いっしょに やろう</span>';
+    if (run.state === 'retry') return '<span class="soft">もういちど</span>';
+    return '';
+  }
+  function hintTextsHtml(spec) {
+    if (!spec.texts || !spec.texts.length) return '';
+    return '<div class="hinttext">' + spec.texts.map(function (t) { return '<span>' + esc(t) + '</span>'; }).join('') + '</div>';
+  }
+  function iconSvg(icon) {
+    var icons = {
+      wake: '<circle cx="50" cy="62" r="20" fill="#ffb300"/><rect x="10" y="62" width="80" height="26" fill="#90caf9"/><g stroke="#ffb300" stroke-width="5" stroke-linecap="round"><line x1="50" y1="22" x2="50" y2="32"/><line x1="20" y1="40" x2="27" y2="47"/><line x1="80" y1="40" x2="73" y2="47"/></g>',
+      school: '<rect x="18" y="40" width="64" height="46" fill="#ffe0b2" stroke="#6d4c41" stroke-width="4"/><polygon points="12,42 50,16 88,42" fill="#d84315"/><rect x="42" y="62" width="16" height="24" fill="#6d4c41"/><circle cx="50" cy="34" r="6" fill="#fff" stroke="#333" stroke-width="2"/>',
+      lunch: '<ellipse cx="50" cy="66" rx="36" ry="12" fill="#eceff1" stroke="#555" stroke-width="3"/><path d="M20 60 Q50 96 80 60 Z" fill="#fff" stroke="#555" stroke-width="3"/><rect x="60" y="24" width="4" height="36" fill="#8d6e63" transform="rotate(20 62 42)"/><rect x="70" y="24" width="4" height="36" fill="#8d6e63" transform="rotate(20 72 42)"/>',
+      home: '<polygon points="14,50 50,18 86,50" fill="#43a047"/><rect x="24" y="48" width="52" height="38" fill="#fff8e1" stroke="#555" stroke-width="3"/><rect x="44" y="62" width="14" height="24" fill="#8d6e63"/>',
+      snack: '<circle cx="36" cy="56" r="18" fill="#d7a86e" stroke="#8d6e63" stroke-width="3"/><circle cx="66" cy="56" r="18" fill="#f8bbd0" stroke="#ad1457" stroke-width="3"/><circle cx="32" cy="52" r="2.5" fill="#5d4037"/><circle cx="40" cy="60" r="2.5" fill="#5d4037"/>',
+      dinner: '<circle cx="50" cy="58" r="30" fill="#fff" stroke="#555" stroke-width="3"/><circle cx="50" cy="58" r="18" fill="#ffcc80"/><circle cx="84" cy="22" r="10" fill="#ffee58"/><circle cx="88" cy="18" r="9" fill="#fff"/>',
+      bath: '<rect x="12" y="50" width="76" height="30" rx="10" fill="#81d4fa" stroke="#0277bd" stroke-width="3"/><circle cx="34" cy="38" r="6" fill="none" stroke="#0277bd" stroke-width="3"/><circle cx="52" cy="30" r="8" fill="none" stroke="#0277bd" stroke-width="3"/><circle cx="68" cy="40" r="5" fill="none" stroke="#0277bd" stroke-width="3"/>',
+      sleep: '<path d="M62 18 A30 30 0 1 0 84 64 A24 24 0 1 1 62 18 Z" fill="#ffee58" stroke="#f9a825" stroke-width="3"/><text x="22" y="40" font-size="18" font-weight="700" fill="#5c6bc0">Z</text><text x="34" y="26" font-size="13" font-weight="700" fill="#5c6bc0">z</text>'
+    };
+    return '<svg viewBox="0 0 100 100" class="icon" aria-hidden="true"><rect x="0" y="0" width="100" height="100" rx="12" fill="#f5f7fa"/>' + (icons[icon] || icons.wake) + '</svg>';
+  }
+  function sceneImageHtml(sc) {
+    if (sc.imageBlobId && imageUrls[sc.imageBlobId]) {
+      return '<img src="' + esc(imageUrls[sc.imageBlobId]) + '" alt="">';
+    }
+    return iconSvg(sc.icon);
+  }
+  function periodBandHtml(md, withMarker) {
+    var pct = (md / 1440) * 100;
+    return '<div class="dayband" aria-hidden="true"><div class="am">ごぜん</div><div class="pm">ごご</div>' +
+      (withMarker ? '<div class="marker" style="left:' + pct.toFixed(1) + '%"></div>' : '') + '</div>';
+  }
+  function sceneCardHtml(sc, s, opts) {
+    opts = opts || {};
+    var html = '<div class="scene-card' + (opts.clockModel ? ' with-clock' : '') + (opts.period ? ' with-band' : '') + '">';
+    html += '<div class="scene-img">' + sceneImageHtml(sc) + '</div>';
+    html += '<div class="scene-label">' + esc(sc.label) + '</div>';
+    if (opts.clockModel) {
+      html += '<div class="scene-clock">' + clockSvg(clockOpts(C.sceneTime12(sc))) + '</div>';
+    }
+    if (opts.period) html += periodBandHtml(sc.minuteOfDay, true);
+    html += '</div>';
+    return html;
+  }
+  function stimulusHtml(q, s) {
+    var run = state.run;
+    switch (q.task) {
+      case 'makeTime': {
+        var spec = makeHint();
+        return '<div class="clockbox make-clock" id="makeClock">' + makeClockSvg(spec) + '</div>' + hintTextsHtml(spec);
+      }
+      case 'textToAnalog': {
+        var spec2 = readingHint();
+        return '<div class="textcard">' + esc(C.formatTime(q.targetTime12, s.timeFormat)) + '</div>' + hintTextsHtml(spec2);
+      }
+      case 'sceneToClock':
+      case 'periodFromScene': {
+        var sc = sceneOf(q.targetSceneId);
+        var spec3 = q.task === 'sceneToClock' ? readingHint() : { texts: [] };
+        if (q.task === 'periodFromScene' && run.hintLevel >= 1) spec3.texts = ['あさ → ひる → よる の じゅん'];
+        return sceneCardHtml(sc, s, {
+          clockModel: s.showSceneClockModel,
+          period: q.task === 'sceneToClock' && s.includePeriod
+        }) + hintTextsHtml(spec3);
+      }
+      default: {
+        var spec4 = readingHint();
+        var html = '<div class="clockbox">' + clockSvg(clockOpts(q.targetTime12, { hint: spec4 })) + '</div>';
+        if (q.task === 'clockToScene' && s.includePeriod) html += periodBandHtml(q.targetMinuteOfDay, true);
+        return html + hintTextsHtml(spec4);
+      }
+    }
+  }
+  function responsesHtml(q, s) {
+    var run = state.run, done = run.state === 'correct';
+    var chosen = {};
+    run.r.attempts.forEach(function (a) { if (a.optionId) chosen[a.optionId] = true; });
+    if (q.task === 'makeTime') {
+      var html = '';
+      var needsSelect = s.minutePreset !== 'hour';
+      if (needsSelect) {
+        var wrong = makeWrongHand();
+        var hl = run.hintLevel >= 1 ? wrong : null;
+        html += '<div class="hand-select">';
+        html += '<button class="btn handbtn' + (run.selectedHand === 'short' ? ' selected' : '') + (hl === 'short' ? ' hinted' : '') + '" data-action="selectHand" data-hand="short" aria-pressed="' + (run.selectedHand === 'short') + '"><span class="swatch short" style="background:' + esc(handColor('short')) + '"></span>みじかい はり</button>';
+        html += '<button class="btn handbtn' + (run.selectedHand === 'long' ? ' selected' : '') + (hl === 'long' ? ' hinted' : '') + '" data-action="selectHand" data-hand="long" aria-pressed="' + (run.selectedHand === 'long') + '"><span class="swatch long" style="background:' + esc(handColor('long')) + '"></span>ながい はり</button>';
+        html += '</div>';
+      }
+      return html;
+    }
+    if (q.task === 'periodFromScene') {
+      var lvl = run.hintLevel;
+      var sc = sceneOf(q.targetSceneId);
+      var pct = (sc.minuteOfDay / 1440) * 100;
+      var b = '<div class="period-band' + (lvl >= 1 ? ' labeled' : '') + '">';
+      q.options.forEach(function (o) {
+        var isAm = o.value === 'am';
+        var sel = done && o.id === q.correctOptionId;
+        var hint3 = lvl >= 3 && o.id === q.correctOptionId;
+        b += '<button class="btn opt period ' + o.value + (sel ? ' selected' : '') + (hint3 ? ' hinted' : '') + '" data-action="choose" data-opt="' + o.id + '"' + (done ? ' disabled' : '') + '>' +
+          '<span class="plabel">' + (isAm ? 'ごぜん' : 'ごご') + '</span>' +
+          (lvl >= 1 ? '<span class="psub">' + (isAm ? 'よなか → あさ → ひる' : 'ひる → ゆうがた → よる') + '</span>' : '') + '</button>';
+      });
+      if (lvl >= 2) b += '<div class="marker" style="left:' + pct.toFixed(1) + '%"></div>';
+      b += '</div>';
+      return b;
+    }
+    var opts = '<div class="options">';
+    q.options.forEach(function (o) {
+      var sel = done && o.id === q.correctOptionId;
+      var cls = 'btn opt' + (sel ? ' selected' : '');
+      var inner = '';
+      if (C.TASKS[q.task].optionKind === 'clock') {
+        cls += ' clockopt';
+        inner = clockSvg(clockOpts(o.value, { hint: clockHint(q.hintCategory, run.hintLevel, o.value) }));
+      } else if (C.TASKS[q.task].optionKind === 'scene') {
+        cls += ' sceneopt';
+        var sc = sceneOf(o.value);
+        inner = sceneCardHtml(sc, s, { clockModel: s.showSceneClockModel });
+      } else if (C.TASKS[q.task].optionKind === 'hour') {
+        cls += ' textopt';
+        inner = esc(C.formatHour(o.value));
+      } else if (C.TASKS[q.task].optionKind === 'minute') {
+        cls += ' textopt';
+        inner = esc(C.formatMinute(o.value, s.timeFormat));
+      } else {
+        cls += ' textopt';
+        inner = esc(C.formatTime(o.value, s.timeFormat));
+      }
+      opts += '<button class="' + cls + '" data-action="choose" data-opt="' + o.id + '"' + (done ? ' disabled' : '') + '>' + inner + '</button>';
+    });
+    opts += '</div>';
+    return opts;
+  }
+  function handColor(which) {
+    var s = state.run.settings;
+    if (s.handStyle === 'mono') return '#222222';
+    return which === 'short' ? s.shortColor : s.longColor;
+  }
+
+  // ----- 選択式の回答 -----
+  function onChoose(optId) {
+    var run = state.run;
+    if (!run || run.state === 'correct' || inputBlocked()) return;
+    var q = run.q, opt = null;
+    q.options.forEach(function (o) { if (o.id === optId) opt = o; });
+    if (!opt) return;
+    var correct = optId === q.correctOptionId;
+    run.r.attempts.push({ optionId: optId, value: opt.value, correct: correct, hintLevel: run.hintLevel, ms: Date.now() - run.qStart });
+    judge(correct);
+  }
+  function judge(correct) {
+    var run = state.run, s = run.settings;
+    if (correct) {
+      run.state = 'correct';
+      run.r.solved = true;
+      run.r.finalOutcome = C.classifyOutcome(run.r);
+    } else {
+      run.errors++;
+      // H3後も困難 → 正解扱いにせず教師対応へ
+      if (run.hintLevel >= 3 || (s.hints === 'off' && run.errors >= 2)) run.state = 'teacherHelp';
+      else run.state = 'retry';
+      if (s.hints === 'autoAfterError' && run.hintLevel < 3) raiseHint('auto');
+    }
+    saveSession();
+    renderS1();
+  }
+  function raiseHint(trigger) {
+    var run = state.run;
+    if (run.hintLevel >= 3) return;
+    run.hintLevel++;
+    run.r.hintsShown.push({ level: run.hintLevel, trigger: trigger, afterAttempts: run.r.attempts.length });
+    run.r.maxHint = Math.max(run.r.maxHint, run.hintLevel);
+  }
+
+  // ----- B 時計をつくる -----
+  function makeWrongHand() {
+    var run = state.run, q = run.q;
+    if (C.minuteOf(run.current) !== C.minuteOf(q.targetTime12)) return 'long';
+    if (C.hourIndex(run.current) !== C.hourIndex(q.targetTime12)) return 'short';
+    return null;
+  }
+  function makeHint() {
+    var run = state.run, q = run.q, lvl = run.hintLevel;
+    var spec = { texts: [] };
+    if (!lvl) return spec;
+    var wrong = makeWrongHand();
+    if (wrong === 'short') { spec.emphShort = true; spec.texts.push('みじかい はりを うごかそう'); }
+    if (wrong === 'long') { spec.emphLong = true; spec.texts.push('ながい はりを うごかそう'); }
+    if (lvl >= 2) {
+      spec.targetNums = [C.displayHour(q.targetTime12)];
+      if (run.settings.minutePreset !== 'hour') spec.targetMinute = C.minuteOf(q.targetTime12);
+    }
+    if (lvl >= 3) spec.ghost = q.targetTime12;
+    return spec;
+  }
+  function makeClockSvg(spec) {
+    var run = state.run;
+    return clockSvg(clockOpts(run.current, {
+      hint: spec,
+      ghostTime: spec.ghost != null ? spec.ghost : null,
+      targetMinuteMark: spec.targetMinute != null ? spec.targetMinute : null
+    }));
+  }
+  function refreshMakeClock() {
+    var el = document.getElementById('makeClock');
+    if (el) el.innerHTML = makeClockSvg(makeHint());
+  }
+  function svgPoint(svg, clientX, clientY) {
+    var ctm = svg.getScreenCTM();
+    if (ctm) {
+      var inv = ctm.inverse();
+      return { x: inv.a * clientX + inv.c * clientY + inv.e, y: inv.b * clientX + inv.d * clientY + inv.f };
+    }
+    var r = svg.getBoundingClientRect();
+    return { x: (clientX - r.left) / r.width * 240, y: (clientY - r.top) / r.height * 240 };
+  }
+  function distToSegment(p, a, b) {
+    var dx = b.x - a.x, dy = b.y - a.y;
+    var t = ((p.x - a.x) * dx + (p.y - a.y) * dy) / (dx * dx + dy * dy);
+    t = Math.max(0, Math.min(1, t));
+    var x = a.x + t * dx, y = a.y + t * dy;
+    return Math.sqrt((p.x - x) * (p.x - x) + (p.y - y) * (p.y - y));
+  }
+  function hitHands(p) {
+    var ang = C.handAngles(state.run.current), out = [];
+    var c = { x: CX, y: CY };
+    if (Math.sqrt((p.x - CX) * (p.x - CX) + (p.y - CY) * (p.y - CY)) < 16) return out;
+    if (distToSegment(p, c, polar(ang.hour, 54)) <= 14) out.push('short');
+    if (distToSegment(p, c, polar(ang.minute, 86)) <= 12) out.push('long');
+    return out;
+  }
+  var drag = null;
+  function bindMakeClock() {
+    var wrap = document.getElementById('makeClock');
+    if (!wrap) return;
+    // iOS Safari でページがスクロールしないように（touch-action: none も併用）
+    wrap.addEventListener('touchstart', function (e) { e.preventDefault(); }, { passive: false });
+    wrap.addEventListener('touchmove', function (e) { e.preventDefault(); }, { passive: false });
+    wrap.addEventListener('pointerdown', onMakeDown);
+    wrap.addEventListener('pointermove', onMakeMove);
+    wrap.addEventListener('pointerup', onMakeUp);
+    wrap.addEventListener('pointercancel', onMakeCancel);
+  }
+  function pointerInfo(e) {
+    var svg = document.querySelector('#makeClock svg');
+    var p = svgPoint(svg, e.clientX, e.clientY);
+    return { p: p, theta: C.angleFromPoint(p.x, p.y, CX, CY) };
+  }
+  function onMakeDown(e) {
+    var run = state.run;
+    if (!run || run.state === 'correct' || drag) return;
+    if (run.lockUntilRelease) return;
+    e.preventDefault();
+    var wrap = e.currentTarget;
+    try { wrap.setPointerCapture(e.pointerId); } catch (err) { /* 古い環境 */ }
+    var info = pointerInfo(e);
+    var hourOnly = run.settings.minutePreset === 'hour';
+    var hits = hitHands(info.p);
+    if (hourOnly) hits = hits.filter(function (h) { return h === 'short'; });
+    drag = {
+      id: e.pointerId, x: e.clientX, y: e.clientY, moved: false,
+      hits: hits,
+      onHand: hits.indexOf(run.selectedHand) >= 0,
+      hand: hourOnly ? 'short' : run.selectedHand,
+      long: null
+    };
+  }
+  function onMakeMove(e) {
+    var run = state.run;
+    if (!drag || e.pointerId !== drag.id || !run) return;
+    e.preventDefault();
+    if (run.settings.constructionInput === 'tapOnly') return;
+    if (!drag.moved) {
+      var dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+      if (dx * dx + dy * dy < 64) return; // 8px 未満はタップ扱い
+      drag.moved = true;
+      // 針を1本だけつまんでドラッグを始めたら、その針を動かす（重なっている時はボタンの選択を優先）
+      if (run.settings.minutePreset !== 'hour' && drag.hits.length === 1 && drag.hits[0] !== run.selectedHand) {
+        run.selectedHand = drag.hits[0];
+        drag.hand = drag.hits[0];
+        updateHandButtons();
+      }
+    }
+    var info = pointerInfo(e);
+    if (drag.hand === 'short') {
+      run.current = C.applyShortDrag(run.current, info.theta);
+    } else {
+      if (!drag.long) drag.long = C.startLongDrag(run.current, info.theta, C.minuteStep(run.settings));
+      run.current = C.moveLongDrag(drag.long, info.theta);
+    }
+    noteInput('drag');
+    refreshMakeClock();
+  }
+  function onMakeUp(e) {
+    var run = state.run;
+    if (!drag || e.pointerId !== drag.id || !run) return;
+    var d = drag; drag = null;
+    if (!d.moved) {
+      // タップ：選んでいる針そのものを触っただけなら動かさない
+      if (!d.onHand) {
+        var info = pointerInfo(e);
+        if (d.hand === 'short') run.current = C.applyShortTap(run.current, info.theta);
+        else run.current = C.applyLongTap(run.current, info.theta, C.minuteStep(run.settings));
+        noteInput('tap');
+      }
+    }
+    renderS1();
+  }
+  function onMakeCancel(e) {
+    if (drag && e.pointerId === drag.id) { drag = null; renderS1(); }
+  }
+  function updateHandButtons() {
+    Array.prototype.forEach.call(document.querySelectorAll('.handbtn'), function (b) {
+      var on = b.getAttribute('data-hand') === state.run.selectedHand;
+      b.classList.toggle('selected', on);
+      b.setAttribute('aria-pressed', String(on));
+    });
+  }
+  function noteInput(kind) {
+    var r = state.run.r;
+    if (r.inputMethod.indexOf(kind) < 0) r.inputMethod.push(kind);
+  }
+  function submitMake() {
+    var run = state.run;
+    if (!run || run.state === 'correct' || inputBlocked()) return;
+    var correct = run.current === run.q.targetTime12;
+    run.r.attempts.push({ value: run.current, correct: correct, hintLevel: run.hintLevel, ms: Date.now() - run.qStart });
+    judge(correct);
+  }
+
+  // ----- 音声（13-9） -----
+  function speak() {
+    var run = state.run;
+    if (!run || !run.settings.audio) return;
+    try {
+      if (!window.speechSynthesis) return;
+      window.speechSynthesis.cancel();
+      var u = new SpeechSynthesisUtterance(promptOf(run.q, run.settings).speak);
+      u.lang = 'ja-JP';
+      u.rate = 0.85;
+      window.speechSynthesis.speak(u);
+    } catch (e) { /* 音声が使えなくても課題は続けられる */ }
+  }
+
+  // ===== S2 終了 =====
+  function renderS2() {
+    appEl.innerHTML = '<div class="screen s2"><p class="s2-msg">できました</p>' +
+      '<div class="s2-buttons"><button class="btn big" data-action="again">もういちど</button>' +
+      '<button class="btn big" data-action="toS0">おわる</button></div></div>';
+  }
+
+  // ===== T0 教師入口（掛け算1問） =====
+  function openGate(route) {
+    var prev = lsGet(LS.gate, null);
+    var g = C.makeGateProblem(prev);
+    lsSet(LS.gate, g.key);
+    state.gate = { a: g.a, b: g.b, answer: g.answer, key: g.key, input: '', route: route, returnTo: state.screen };
+    go('t0');
+  }
+  function renderT0() {
+    var g = state.gate;
+    var keys = '';
+    [1, 2, 3, 4, 5, 6, 7, 8, 9].forEach(function (n) { keys += '<button class="btn key" data-action="gateKey" data-k="' + n + '">' + n + '</button>'; });
+    keys += '<button class="btn key" data-action="gateClear">けす</button><button class="btn key" data-action="gateKey" data-k="0">0</button><button class="btn key ok" data-action="gateOk">OK</button>';
+    appEl.innerHTML = '<div class="screen t0"><p class="t0-note">教師用の入口です（誤操作防止のための簡易入口）</p>' +
+      '<p class="t0-q"><span id="gateA">' + g.a + '</span> × <span id="gateB">' + g.b + '</span> = <span class="t0-in" id="gateInput">' + esc(g.input || '　') + '</span></p>' +
+      '<div class="keypad">' + keys + '</div>' +
+      '<button class="btn small" data-action="gateCancel">もどる</button></div>';
+  }
+  function gateOk() {
+    var g = state.gate;
+    var ok = Number(g.input) === g.answer && g.input !== '';
+    state.gate = null;
+    if (g.route === 'teacher') {
+      if (ok) go('t1'); else go('s0');
+    } else {
+      if (ok) go('help'); else go('s1');
+    }
+  }
+
+  // ===== 教師対応（S1 から「せんせいと」） =====
+  function renderHelp() {
+    var run = state.run, q = run.q;
+    var target = q.task === 'periodFromScene' || q.task === 'clockToScene' || q.task === 'sceneToClock'
+      ? sceneOf(q.targetSceneId).label + '（' + C.formatMinuteOfDay(q.targetMinuteOfDay) + '）'
+      : C.formatTeacherTime(q.targetTime12);
+    var chips = SUPPORT_TYPES.map(function (t) {
+      return '<label class="chip"><input type="checkbox" name="support" value="' + esc(t) + '"> ' + esc(t) + '</label>';
+    }).join('');
+    appEl.innerHTML = '<div class="screen tscreen help"><h2>教師対応</h2>' +
+      '<p>記号 <b>' + esc(run.session.profileCodeSnapshot) + '</b>　' + (run.idx + 1) + '問目／' + run.session.questions.length + '問　正答：<b>' + esc(target) + '</b>　誤答 ' + run.errors + '回・ヒント最大 H' + run.hintLevel + '</p>' +
+      '<fieldset><legend>外部支援（した支援を選ぶ）</legend>' + chips +
+      '<label class="chip">その他 <input type="text" id="supportOther" maxlength="40" placeholder="自由記述（氏名は書かない）"></label></fieldset>' +
+      '<div class="help-actions">' +
+      '<button class="btn" data-action="helpTogether">支援を記録して、いっしょに答える</button>' +
+      '<button class="btn" data-action="helpSkip">この問題をとばす（未完）</button>' +
+      '<button class="btn" data-action="helpEnd">学習をここで終わる（残りは未完）</button>' +
+      '<button class="btn small" data-action="helpBack">何もせず戻る</button></div></div>';
+  }
+  function collectSupports() {
+    var out = [];
+    Array.prototype.forEach.call(document.querySelectorAll('input[name=support]:checked'), function (el) { out.push(el.value); });
+    var other = document.getElementById('supportOther');
+    if (other && other.value.trim()) out.push(other.value.trim());
+    return out;
+  }
+  function helpTogether() {
+    var run = state.run;
+    var sup = collectSupports();
+    if (!sup.length) sup = ['教師といっしょに'];
+    sup.forEach(function (x) { if (run.r.externalSupport.indexOf(x) < 0) run.r.externalSupport.push(x); });
+    run.state = 'retry';
+    run.renderedAt = performance.now();
+    saveSession();
+    go('s1');
+  }
+  function helpSkip() {
+    var run = state.run;
+    var sup = collectSupports();
+    sup.forEach(function (x) { if (run.r.externalSupport.indexOf(x) < 0) run.r.externalSupport.push(x); });
+    run.r.skipped = true;
+    run.r.finalOutcome = 'incomplete';
+    saveSession();
+    nextQuestion();
+  }
+  function helpEnd() {
+    var run = state.run;
+    run.r.skipped = true;
+    run.r.finalOutcome = 'incomplete';
+    run.session.status = 'endedByTeacher';
+    run.session.localEndedAt = nowIso();
+    saveSession();
+    state.run = null;
+    go('s0');
+  }
+
+  // ===== T1 教師設定 =====
+  function warningsHtml() {
+    var html = '';
+    if (state.warnings.length) {
+      html += '<div class="alert">' + state.warnings.map(esc).join('<br>') + '</div>';
+    }
+    html += '<p class="note">設定・結果・画像はこの端末のこのブラウザの中だけに保存されます。別の端末・別のブラウザでは引き継がれず、ブラウザのデータ（履歴・Webサイトデータ）を消すと消えます。</p>';
+    return html;
+  }
+  function renderT1() {
+    var profs = sortedProfiles();
+    var html = '<div class="screen tscreen t1"><div class="tbar"><h2>教師設定</h2>' +
+      '<button class="btn small" data-action="toT2">日課カード（T2）</button>' +
+      '<button class="btn small" data-action="toT3">結果（T3）</button>' +
+      '<button class="btn small" data-action="toS0">児童画面へ</button></div>';
+    html += warningsHtml();
+    html += '<section><h3>端末の設定</h3><label class="row"><input type="checkbox" data-device="skipCodeSelection"' + (state.device.skipCodeSelection ? ' checked' : '') + '> 記号の選択を省略する（1人で使い続ける端末向け。開始画面は「はじめる」だけになり、最後に使った記号の設定で出題）</label>';
+    if (state.device.skipCodeSelection) {
+      html += '<p class="small">現在使う記号：<b>' + esc((findProfile(state.device.lastProfileId) || profs[0] || { code: '（未登録）' }).code) + '</b>　<select data-device="lastProfileId">' +
+        profs.map(function (p) { return '<option value="' + esc(p.id) + '"' + (p.id === state.device.lastProfileId ? ' selected' : '') + '>' + esc(p.code) + '</option>'; }).join('') + '</select></p>';
+    }
+    html += '</section>';
+    html += '<section><h3>記号の一覧（最大' + MAX_PROFILES + '個）</h3><table class="ptable"><tbody>';
+    profs.forEach(function (p, i) {
+      var s = C.normalizeSettings(p.settings);
+      html += '<tr><td class="pcode">' + esc(p.code) + '</td><td class="small">' + esc(C.TASKS[s.task].label) + '／' + esc(C.MINUTE_PRESET_LABELS[s.minutePreset]) + '</td><td class="acts">' +
+        '<button class="btn small" data-action="editProfile" data-id="' + esc(p.id) + '">設定</button>' +
+        '<button class="btn small" data-action="renameProfile" data-id="' + esc(p.id) + '">名前変更</button>' +
+        '<button class="btn small" data-action="moveProfile" data-id="' + esc(p.id) + '" data-dir="-1"' + (i === 0 ? ' disabled' : '') + '>↑</button>' +
+        '<button class="btn small" data-action="moveProfile" data-id="' + esc(p.id) + '" data-dir="1"' + (i === profs.length - 1 ? ' disabled' : '') + '>↓</button>' +
+        '<button class="btn small danger" data-action="deleteProfile" data-id="' + esc(p.id) + '">削除</button></td></tr>';
+    });
+    html += '</tbody></table>';
+    if (profs.length < MAX_PROFILES) {
+      html += '<div class="row addrow"><input type="text" id="newCode" maxlength="4" placeholder="例：A" autocomplete="off" autocapitalize="characters">' +
+        '<button class="btn small" data-action="addProfile">記号を追加</button>' +
+        '<span class="caution">記号は1〜4文字。<b>児童の氏名・診断情報は入れないでください。</b></span></div>';
+    }
+    html += '<p class="small" id="t1msg"></p></section></div>';
+    appEl.innerHTML = html;
+  }
+  function validateCode(code, exceptId) {
+    code = (code || '').trim();
+    if (code.length < 1 || code.length > 4) return '記号は1〜4文字にしてください。';
+    var dup = state.profiles.some(function (p) { return p.code === code && p.id !== exceptId; });
+    if (dup) return '同じ記号がすでにあります。';
+    return null;
+  }
+  function addProfile() {
+    var el = document.getElementById('newCode');
+    var code = (el.value || '').trim();
+    var err = validateCode(code);
+    if (err) { document.getElementById('t1msg').textContent = err; return; }
+    if (state.profiles.length >= MAX_PROFILES) return;
+    var maxOrder = state.profiles.reduce(function (a, p) { return Math.max(a, p.order); }, -1);
+    state.profiles.push({ id: C.newId('p'), code: code, order: maxOrder + 1, settings: C.defaultSettings() });
+    saveProfiles();
+    renderT1();
+  }
+  function renameProfile(id) {
+    var p = findProfile(id);
+    if (!p) return;
+    var code = window.prompt('新しい記号（1〜4文字。氏名・診断情報は入れない）', p.code);
+    if (code == null) return;
+    code = code.trim();
+    var err = validateCode(code, id);
+    if (err) { window.alert(err); return; }
+    p.code = code; // 過去の結果は profileCodeSnapshot を持つので変わらない
+    saveProfiles();
+    renderT1();
+  }
+  function deleteProfile(id) {
+    var p = findProfile(id);
+    if (!p) return;
+    if (!window.confirm('記号「' + p.code + '」を削除しますか？\n（この記号の設定は消えます。過去の結果は消えません）')) return;
+    state.profiles = state.profiles.filter(function (x) { return x.id !== id; });
+    if (state.device.lastProfileId === id) state.device.lastProfileId = null;
+    if (state.selectedProfileId === id) state.selectedProfileId = null;
+    saveProfiles(); saveDevice();
+    renderT1();
+  }
+  function moveProfile(id, dir) {
+    var list = sortedProfiles();
+    var i = list.findIndex(function (p) { return p.id === id; });
+    var j = i + dir;
+    if (i < 0 || j < 0 || j >= list.length) return;
+    var t = list[i]; list[i] = list[j]; list[j] = t;
+    list.forEach(function (p, k) { p.order = k; });
+    saveProfiles();
+    renderT1();
+  }
+
+  // ----- 記号ごとの設定 -----
+  function optionsFor(key) {
+    switch (key) {
+      case 'minutePreset': return Object.keys(C.MINUTE_PRESET_LABELS).map(function (k) { return [k, C.MINUTE_PRESET_LABELS[k]]; });
+      case 'questionCount': return [[3, '3問'], [5, '5問'], [10, '10問']];
+      case 'optionCount': return [[2, '2択'], [3, '3択'], [4, '4択']];
+      case 'timeFormat': return [['kana', 'ひらがな（3じ30ぷん）'], ['digital', '数字（3:30）']];
+      case 'distractorType': return [['easy', 'かんたん（離れた時刻）'], ['common', 'よくある誤り（設定した時・分の中だけ）'], ['commonExtended', 'よくある誤り（未習の数字も使う）']];
+      case 'hints': return [['manual', '手動（ヒントボタン）'], ['autoAfterError', '誤答1回ごとに1段階'], ['off', 'なし']];
+      case 'handStyle': return [['twoColor', '2色'], ['mono', '黒1色（色なし）']];
+      case 'constructionInput': return [['dragAndTap', 'ドラッグ＋タップ'], ['tapOnly', 'タップのみ']];
+    }
+    return [];
+  }
+  function radioGroup(key, val) {
+    return '<div class="radios">' + optionsFor(key).map(function (o) {
+      return '<label class="chip"><input type="radio" name="f-' + key + '" data-field="' + key + '" value="' + esc(o[0]) + '"' + (String(val) === String(o[0]) ? ' checked' : '') + '> ' + esc(o[1]) + '</label>';
+    }).join('') + '</div>';
+  }
+  function colorField(key, val) {
+    return '<div class="radios">' + COLOR_SWATCHES.map(function (c) {
+      return '<label class="chip swatchchip"><input type="radio" name="f-' + key + '" data-field="' + key + '" value="' + c + '"' + (val.toLowerCase() === c ? ' checked' : '') + '><span class="sw" style="background:' + c + '"></span></label>';
+    }).join('') + '<label class="chip">ほかの色 <input type="color" data-field="' + key + '" value="' + esc(val) + '"></label></div>';
+  }
+  function renderProfileEdit() {
+    var p = findProfile(state.editProfileId);
+    if (!p) { go('t1'); return; }
+    var s = C.normalizeSettings(p.settings);
+    var mode = C.TASKS[s.task].mode;
+    var diag = C.diagnose(s, sortedScenes());
+    var html = '<div class="screen tscreen tedit"><div class="tbar"><h2>記号「' + esc(p.code) + '」の設定</h2><button class="btn small" data-action="toT1">一覧へ戻る</button></div>';
+    html += '<section><h3>プリセット</h3><div class="radios">' + C.PRESETS.map(function (pr) {
+      return '<button class="btn small preset' + (s.presetId === pr.id ? ' selected' : '') + '" data-action="applyPreset" data-preset="' + pr.id + '">' + esc(pr.label) + '</button>';
+    }).join('') + '</div><p class="small">プリセットは課題・分・ヒントを変えます（時・問題数・色などはそのまま）。適用後に下で個別に変更できます。</p></section>';
+
+    html += '<section class="diag">';
+    diag.errors.forEach(function (e) { html += '<p class="err">出題できません：' + esc(e) + '</p>'; });
+    diag.warnings.forEach(function (w) { html += '<p class="warn">' + esc(w) + '</p>'; });
+    diag.notes.forEach(function (n) { html += '<p class="small">' + esc(n) + '</p>'; });
+    if (!diag.errors.length && !diag.warnings.length) html += '<p class="ok">この設定で出題できます。</p>';
+    html += '</section>';
+
+    html += '<section><h3>課題</h3><select data-field="task">';
+    ['A', 'B', 'C', 'D'].forEach(function (md) {
+      html += '<optgroup label="' + esc(C.MODE_LABELS[md]) + '">';
+      C.TASK_ORDER.forEach(function (t) {
+        if (C.TASKS[t].mode !== md) return;
+        html += '<option value="' + t + '"' + (s.task === t ? ' selected' : '') + '>' + esc(C.TASKS[t].label) + '</option>';
+      });
+      html += '</optgroup>';
+    });
+    html += '</select></section>';
+
+    if (mode !== 'D') {
+      html += '<section><h3>分（minutePreset）</h3>' + radioGroup('minutePreset', s.minutePreset);
+      if (s.minutePreset === 'fiveSubset') {
+        html += '<div class="radios">' + C.FIVE_MINUTES.map(function (m) {
+          return '<label class="chip"><input type="checkbox" data-multi="allowedMinutes" value="' + m + '"' + (s.allowedMinutes.indexOf(m) >= 0 ? ' checked' : '') + '> ' + C.pad2(m) + '分</label>';
+        }).join('') + '</div>';
+      }
+      html += '</section>';
+      html += '<section><h3>時（allowedHours）</h3><div class="radios">' + C.ALL_HOURS.map(function (h) {
+        return '<label class="chip"><input type="checkbox" data-multi="allowedHours" value="' + h + '"' + (s.allowedHours.indexOf(h) >= 0 ? ' checked' : '') + '> ' + h + '時</label>';
+      }).join('') + '</div></section>';
+    } else {
+      html += '<section><h3>この記号で使う日課カード</h3><p class="small">何も選ばない＝T2で有効なカードをすべて使う。「時」「分」の設定は、活動→時計の誤答の補充に使います。</p><div class="radios">' +
+        sortedScenes().map(function (sc) {
+          return '<label class="chip"><input type="checkbox" data-multi="sceneIds" value="' + esc(sc.id) + '"' + (s.sceneIds.indexOf(sc.id) >= 0 ? ' checked' : '') + '> ' + esc(sc.label) + '（' + esc(C.formatMinuteOfDay(sc.minuteOfDay)) + '）' + (sc.active ? '' : '［無効］') + '</label>';
+        }).join('') + '</div>';
+      html += '<label class="row"><input type="checkbox" data-bool="showSceneClockModel"' + (s.showSceneClockModel ? ' checked' : '') + '> 場面カードに時計の見本を出す</label>';
+      html += '<label class="row"><input type="checkbox" data-bool="includePeriod"' + (s.includePeriod ? ' checked' : '') + '> 午前・午後の帯を時計・場面に添える</label></section>';
+    }
+    html += '<section><h3>問題数・選択肢</h3>' + radioGroup('questionCount', s.questionCount) + (mode === 'B' ? '' : radioGroup('optionCount', s.optionCount)) + '</section>';
+    html += '<section><h3>表記</h3>' + radioGroup('timeFormat', s.timeFormat) + '</section>';
+    if (mode !== 'B' && s.task !== 'periodFromScene') html += '<section><h3>誤答の種類</h3>' + radioGroup('distractorType', s.distractorType) + '</section>';
+    html += '<section><h3>ヒント</h3>' + radioGroup('hints', s.hints) + '</section>';
+    if (mode === 'B') html += '<section><h3>時計をつくる：入力方法</h3>' + radioGroup('constructionInput', s.constructionInput) + '<p class="small">どちらでもタップだけで全問題を完了できます。</p></section>';
+    html += '<section><h3>音声・表示</h3><label class="row"><input type="checkbox" data-bool="audio"' + (s.audio ? ' checked' : '') + '> 音声ON（「きく」ボタンで指示を読み上げる。正答は読まない）</label>' +
+      '<label class="row"><input type="checkbox" data-bool="showMinuteRing"' + (s.showMinuteRing ? ' checked' : '') + '> 外周に分の数字（05〜55・00）を常に表示</label></section>';
+    html += '<section class="handsec"><h3>針</h3>' + radioGroup('handStyle', s.handStyle) +
+      '<p>短針の色</p>' + colorField('shortColor', s.shortColor) + '<p>長針の色</p>' + colorField('longColor', s.longColor) +
+      '<div class="preview">' + clockSvg({ time12: 3 * 60 + 30, shortColor: s.shortColor, longColor: s.longColor, handStyle: s.handStyle, minuteRing: s.showMinuteRing }) + '<span class="small">見本（3:30）</span></div></section>';
+    html += '<p class="small">最終更新：' + esc(localDateTime(s.updatedAt)) + '</p></div>';
+    appEl.innerHTML = html;
+  }
+  function updateEditedSettings(fn) {
+    var p = findProfile(state.editProfileId);
+    if (!p) return;
+    var s = C.normalizeSettings(p.settings);
+    fn(s);
+    s.updatedAt = nowIso();
+    p.settings = C.normalizeSettings(s);
+    saveProfiles();
+    var scrollEl = document.querySelector('.tscreen');
+    var y = scrollEl ? scrollEl.scrollTop : 0;
+    renderProfileEdit();
+    var el2 = document.querySelector('.tscreen');
+    if (el2) el2.scrollTop = y;
+  }
+  function onEditChange(t) {
+    if (t.dataset.field) {
+      var key = t.dataset.field, v = t.value;
+      updateEditedSettings(function (s) {
+        if (key === 'questionCount' || key === 'optionCount') v = Number(v);
+        s[key] = v;
+        // 5分の部分集合に切り替えた直後は、例として {5,10,15} を入れておく
+        if (key === 'minutePreset' && v === 'fiveSubset') s.allowedMinutes = [5, 10, 15];
+      });
+    } else if (t.dataset.multi) {
+      var mk = t.dataset.multi;
+      var vals = Array.prototype.map.call(document.querySelectorAll('input[data-multi="' + mk + '"]:checked'), function (el) {
+        return mk === 'sceneIds' ? el.value : Number(el.value);
+      });
+      updateEditedSettings(function (s) { s[mk] = vals; });
+    } else if (t.dataset.bool) {
+      var bk = t.dataset.bool, bv = t.checked;
+      updateEditedSettings(function (s) { s[bk] = bv; });
+    }
+  }
+
+  // ===== T2 日課カード編集 =====
+  function renderT2() {
+    var list = sortedScenes();
+    loadImageUrls(list.map(function (x) { return x.imageBlobId; })).then(function () {
+      if (state.screen !== 't2') return;
+      var html = '<div class="screen tscreen t2"><div class="tbar"><h2>日課カード（T2）</h2><button class="btn small" data-action="toT1">設定へ戻る</button></div>';
+      html += warningsHtml();
+      html += '<p class="small">画像：JPEG／PNG／WebP。読み込み時に長辺1024px以下・約1MB以下に縮小して、この端末に保存します。児童画面では画像の登録・削除はできません。<br>同じ時計の位置になるカード（例：朝7時と夜7時）は、同じ問題の選択肢に一緒には出ません。</p>';
+      html += '<table class="stable"><tbody>';
+      list.forEach(function (sc) {
+        var h24 = Math.floor(sc.minuteOfDay / 60), mm = sc.minuteOfDay % 60;
+        var hourOpts = '';
+        for (var h = 0; h < 24; h++) hourOpts += '<option value="' + h + '"' + (h === h24 ? ' selected' : '') + '>' + h + '時（' + (h < 12 ? '午前' : '午後') + (h % 12) + '時）</option>';
+        var minOpts = C.FIVE_MINUTES.map(function (m) { return '<option value="' + m + '"' + (m === mm ? ' selected' : '') + '>' + C.pad2(m) + '分</option>'; }).join('');
+        html += '<tr data-scene="' + esc(sc.id) + '"><td class="thumb">' + sceneImageHtml(sc) + '</td><td>' +
+          '<input type="text" class="slabel" data-scene-field="label" value="' + esc(sc.label) + '" maxlength="16"> ' +
+          '<select data-scene-field="hour">' + hourOpts + '</select> <select data-scene-field="minute">' + minOpts + '</select> ' +
+          '<label class="chip"><input type="checkbox" data-scene-field="active"' + (sc.active ? ' checked' : '') + '> 使う</label><br>' +
+          '<label class="btn small filebtn">画像を選ぶ<input type="file" accept="image/jpeg,image/png,image/webp" data-scene-file="' + esc(sc.id) + '"></label>' +
+          (sc.imageBlobId ? '<button class="btn small" data-action="sceneImageClear" data-id="' + esc(sc.id) + '">画像をはずす</button>' : '') +
+          '<button class="btn small danger" data-action="sceneDelete" data-id="' + esc(sc.id) + '">カードを削除</button></td></tr>';
+      });
+      html += '</tbody></table><button class="btn small" data-action="sceneAdd">カードを追加</button><p class="small" id="t2msg"></p></div>';
+      appEl.innerHTML = html;
+    });
+  }
+  function onSceneChange(t) {
+    var tr = t.closest('tr[data-scene]');
+    if (!tr) return;
+    var sc = findScene(tr.getAttribute('data-scene'));
+    if (!sc) return;
+    var f = t.dataset.sceneField;
+    if (f === 'label') {
+      var v = t.value.trim();
+      if (v) sc.label = v;
+    } else if (f === 'hour') {
+      sc.minuteOfDay = Number(t.value) * 60 + sc.minuteOfDay % 60;
+    } else if (f === 'minute') {
+      sc.minuteOfDay = Math.floor(sc.minuteOfDay / 60) * 60 + Number(t.value);
+    } else if (f === 'active') {
+      sc.active = t.checked;
+    }
+    saveScenes();
+  }
+  function processImage(file) {
+    return new Promise(function (resolve, reject) {
+      if (['image/jpeg', 'image/png', 'image/webp'].indexOf(file.type) < 0) { reject(new Error('JPEG・PNG・WebPの画像を選んでください。')); return; }
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function () {
+        var scale = Math.min(1, 1024 / Math.max(img.naturalWidth, img.naturalHeight));
+        var w = Math.max(1, Math.round(img.naturalWidth * scale)), h = Math.max(1, Math.round(img.naturalHeight * scale));
+        var cv = document.createElement('canvas');
+        cv.width = w; cv.height = h;
+        var ctx = cv.getContext('2d');
+        ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h);
+        ctx.drawImage(img, 0, 0, w, h);
+        URL.revokeObjectURL(url);
+        var q = 0.85;
+        (function attempt() {
+          cv.toBlob(function (blob) {
+            if (!blob) { reject(new Error('画像を変換できませんでした。')); return; }
+            if (blob.size > 1024 * 1024 && q > 0.4) { q -= 0.15; attempt(); return; }
+            resolve(blob);
+          }, 'image/jpeg', q);
+        })();
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('画像を読み込めませんでした。')); };
+      img.src = url;
+    });
+  }
+  function imageInUse(blobId) {
+    // 過去の結果が参照している画像は消さない（日課を編集しても過去の結果が変わらないように）
+    if (state.scenes.some(function (s) { return s.imageBlobId === blobId; })) return Promise.resolve(true);
+    return idbGetAll('sessions').then(function (list) {
+      return list.some(function (ss) { return (ss.sceneSnapshots || []).some(function (x) { return x.imageBlobId === blobId; }); });
+    });
+  }
+  function releaseImage(blobId) {
+    if (!blobId) return Promise.resolve();
+    return imageInUse(blobId).then(function (used) { if (!used) return idbDelete('images', blobId); });
+  }
+  function onSceneFile(input) {
+    var sc = findScene(input.dataset.sceneFile);
+    var file = input.files && input.files[0];
+    if (!sc || !file) return;
+    var msg = document.getElementById('t2msg');
+    if (msg) msg.textContent = '画像を処理しています…';
+    processImage(file).then(function (blob) {
+      var id = C.newId('img');
+      return idbPut('images', { id: id, blob: blob, createdAt: nowIso() }).then(function () {
+        var old = sc.imageBlobId;
+        sc.imageBlobId = id;
+        saveScenes();
+        return releaseImage(old);
+      });
+    }).then(function () { renderT2(); }).catch(function (e) {
+      if (msg) msg.textContent = e.message || '画像を保存できませんでした。';
+    });
+  }
+
+  // ===== T3 教師結果 =====
+  function renderT3() {
+    idbGetAll('sessions').then(function (all) {
+      if (state.screen !== 't3') return;
+      all.sort(function (a, b) { return a.localStartedAt < b.localStartedAt ? 1 : -1; });
+      var codes = C.uniq(all.map(function (x) { return x.profileCodeSnapshot; }));
+      var dates = C.uniq(all.map(function (x) { return localDate(x.localStartedAt); }));
+      var f = state.t3;
+      var list = all.filter(function (x) {
+        return (!f.code || x.profileCodeSnapshot === f.code) && (!f.date || localDate(x.localStartedAt) === f.date);
+      });
+      var html = '<div class="screen tscreen t3"><div class="tbar"><h2>結果（T3）</h2><button class="btn small" data-action="toT1">設定へ戻る</button></div>';
+      html += warningsHtml();
+      html += '<div class="row">記号 <select data-t3="code"><option value="">すべて</option>' + codes.map(function (c) {
+        return '<option value="' + esc(c) + '"' + (c === f.code ? ' selected' : '') + '>' + esc(c) + '</option>';
+      }).join('') + '</select>　日付 <select data-t3="date"><option value="">すべて</option>' + dates.map(function (d) {
+        return '<option value="' + d + '"' + (d === f.date ? ' selected' : '') + '>' + d + '</option>';
+      }).join('') + '</select></div>';
+      html += '<p class="small">区分：' + C.OUTCOME_ORDER.map(function (k) { return C.OUTCOME_LABELS[k]; }).join('／') + '。この画面は教師用です（児童画面には点数・順位を出しません）。</p>';
+      if (!list.length) html += '<p>結果はまだありません。</p>';
+      html += '<table class="rtable"><thead><tr><th>開始</th><th>記号</th><th>課題</th><th>状態</th>' +
+        C.OUTCOME_ORDER.map(function (k) { return '<th class="oc">' + esc(C.OUTCOME_LABELS[k]) + '</th>'; }).join('') + '<th></th></tr></thead><tbody>';
+      list.forEach(function (ss) {
+        var counts = {};
+        C.OUTCOME_ORDER.forEach(function (k) { counts[k] = 0; });
+        ss.questions.forEach(function (q, i) {
+          var r = ss.results[i];
+          var oc = r && r.finalOutcome ? r.finalOutcome : 'incomplete';
+          counts[oc]++;
+        });
+        var status = { completed: '完了', inProgress: '途中', interrupted: '中断', endedByTeacher: '教師が終了' }[ss.status] || ss.status;
+        html += '<tr><td>' + esc(localDateTime(ss.localStartedAt)) + '</td><td class="pcode">' + esc(ss.profileCodeSnapshot) + '</td><td>' + esc(C.TASKS[ss.settingsSnapshot.task].label) + '<br><span class="small">' + esc(C.MINUTE_PRESET_LABELS[ss.settingsSnapshot.minutePreset]) + '</span></td><td>' + esc(status) + '</td>' +
+          C.OUTCOME_ORDER.map(function (k) { return '<td class="oc">' + counts[k] + '</td>'; }).join('') +
+          '<td><button class="btn small" data-action="t3Open" data-id="' + esc(ss.id) + '">' + (f.openSession === ss.id ? '閉じる' : '詳細') + '</button></td></tr>';
+        if (f.openSession === ss.id) html += '<tr class="detail"><td colspan="' + (5 + C.OUTCOME_ORDER.length) + '">' + sessionDetailHtml(ss) + '</td></tr>';
+      });
+      html += '</tbody></table></div>';
+      appEl.innerHTML = html;
+    });
+  }
+  function questionTargetText(ss, q) {
+    if (q.targetSceneId) {
+      var sc = (ss.sceneSnapshots || []).filter(function (x) { return x.id === q.targetSceneId; })[0];
+      return (sc ? sc.label : '?') + '（' + C.formatMinuteOfDay(q.targetMinuteOfDay) + '）';
+    }
+    return C.formatTeacherTime(q.targetTime12);
+  }
+  function attemptText(ss, q, a) {
+    var v = a.value;
+    if (q.task === 'makeTime' || C.TASKS[q.task].answer === 'time' || C.TASKS[q.task].answer === 'sceneTime') return C.formatTeacherTime(v);
+    if (C.TASKS[q.task].answer === 'hour') return v + '時';
+    if (C.TASKS[q.task].answer === 'minute') return C.pad2(v) + '分';
+    if (C.TASKS[q.task].answer === 'period') return v === 'am' ? '午前' : '午後';
+    if (C.TASKS[q.task].answer === 'scene') {
+      var sc = (ss.sceneSnapshots || []).filter(function (x) { return x.id === v; })[0];
+      return sc ? sc.label : '?';
+    }
+    return String(v);
+  }
+  function sessionDetailHtml(ss) {
+    var html = '<table class="dtable"><thead><tr><th>#</th><th>正答</th><th>回答の記録</th><th>ヒント</th><th>区分</th><th>入力</th><th>常設の支援</th><th>外部支援</th><th></th></tr></thead><tbody>';
+    ss.questions.forEach(function (q, i) {
+      var r = ss.results[i] || { attempts: [], hintsShown: [], maxHint: 0, externalSupport: [], constantSupports: [] };
+      var oc = r.finalOutcome || 'incomplete';
+      html += '<tr><td>' + (i + 1) + '</td><td>' + esc(questionTargetText(ss, q)) + '</td><td>' +
+        (r.attempts.map(function (a) { return (a.correct ? '○' : '・') + esc(attemptText(ss, q, a)); }).join(' → ') || '—') + '</td><td>' +
+        (r.hintsShown.length ? r.hintsShown.map(function (h) { return 'H' + h.level + (h.trigger === 'auto' ? '(自動)' : '(手動)'); }).join(' ') : 'H0') + '</td><td>' +
+        esc(C.OUTCOME_LABELS[oc]) + '</td><td>' + esc(Array.isArray(r.inputMethod) ? (r.inputMethod.join('+') || '—') : (r.inputMethod === 'choice' ? '選択' : r.inputMethod || '—')) + '</td><td>' +
+        esc((r.constantSupports || []).join('、') || '—') + '</td><td>' + esc((r.externalSupport || []).join('、') || '—') + '</td><td>' +
+        '<button class="btn small" data-action="t3AddSupport" data-sid="' + esc(ss.id) + '" data-i="' + i + '">外部支援を追記</button></td></tr>';
+    });
+    return html + '</tbody></table>';
+  }
+  function t3AddSupport(sid, i) {
+    var text = window.prompt('外部支援の内容を追記（例：ゆびさし、ことばかけ。氏名は書かない）', '');
+    if (text == null || !text.trim()) return;
+    idbGet('sessions', sid).then(function (ss) {
+      if (!ss) return;
+      var r = ss.results[i];
+      if (!r) return;
+      r.externalSupport = (r.externalSupport || []).concat([text.trim()]);
+      if (r.finalOutcome && r.finalOutcome !== 'incomplete') r.finalOutcome = C.classifyOutcome(r);
+      return idbPut('sessions', ss);
+    }).then(function () { renderT3(); });
+  }
+
+  var SCREENS = { s0: renderS0, s1: renderS1, s2: renderS2, t0: renderT0, t1: renderT1, tedit: renderProfileEdit, t2: renderT2, t3: renderT3, help: renderHelp };
+
+  // ===== イベント =====
+  var ACTIONS = {
+    pickCode: function (el) { state.selectedProfileId = el.getAttribute('data-id'); renderS0(); },
+    start: function () {
+      var p = state.device.skipCodeSelection
+        ? (findProfile(state.device.lastProfileId) || sortedProfiles()[0])
+        : findProfile(state.selectedProfileId);
+      if (p) startSession(p);
+    },
+    openGate: function (el) { openGate(el.getAttribute('data-route')); },
+    gateKey: function (el) {
+      if (state.gate.input.length >= 3) return;
+      state.gate.input += el.getAttribute('data-k');
+      document.getElementById('gateInput').textContent = state.gate.input;
+    },
+    gateClear: function () { state.gate.input = ''; document.getElementById('gateInput').textContent = '　'; },
+    gateOk: gateOk,
+    gateCancel: function () { var r = state.gate.route; state.gate = null; go(r === 'help' ? 's1' : 's0'); },
+    choose: function (el) { onChoose(el.getAttribute('data-opt')); },
+    hint: function () {
+      var run = state.run;
+      if (!run || run.state === 'correct' || run.settings.hints === 'off' || inputBlocked()) return;
+      raiseHint('manual'); saveSession(); renderS1();
+    },
+    selectHand: function (el) {
+      if (!state.run || state.run.state === 'correct') return;
+      state.run.selectedHand = el.getAttribute('data-hand'); renderS1();
+    },
+    submitMake: submitMake,
+    next: function () { nextQuestion(); },
+    speak: speak,
+    again: function () { var p = findProfile(state.run && state.run.profile.id); state.run = null; if (p) startSession(p); else go('s0'); },
+    toS0: function () { state.run = null; state.selectedProfileId = null; go('s0'); },
+    toT1: function () { go('t1'); },
+    toT2: function () { go('t2'); },
+    toT3: function () { go('t3'); },
+    addProfile: addProfile,
+    renameProfile: function (el) { renameProfile(el.getAttribute('data-id')); },
+    deleteProfile: function (el) { deleteProfile(el.getAttribute('data-id')); },
+    moveProfile: function (el) { moveProfile(el.getAttribute('data-id'), Number(el.getAttribute('data-dir'))); },
+    editProfile: function (el) { state.editProfileId = el.getAttribute('data-id'); go('tedit'); },
+    applyPreset: function (el) {
+      var pid = el.getAttribute('data-preset');
+      var p = findProfile(state.editProfileId);
+      if (!p) return;
+      p.settings = C.applyPreset(C.normalizeSettings(p.settings), pid);
+      saveProfiles(); renderProfileEdit();
+    },
+    helpTogether: helpTogether,
+    helpSkip: helpSkip,
+    helpEnd: helpEnd,
+    helpBack: function () { go('s1'); },
+    sceneAdd: function () {
+      var maxOrder = state.scenes.reduce(function (a, s) { return Math.max(a, s.order || 0); }, -1);
+      state.scenes.push({ id: C.newId('sc'), label: 'あたらしい カード', minuteOfDay: 10 * 60, imageBlobId: null, icon: 'wake', active: true, order: maxOrder + 1 });
+      saveScenes(); renderT2();
+    },
+    sceneDelete: function (el) {
+      var sc = findScene(el.getAttribute('data-id'));
+      if (!sc || !window.confirm('カード「' + sc.label + '」を削除しますか？（過去の結果の名称・時刻は変わりません）')) return;
+      state.scenes = state.scenes.filter(function (x) { return x.id !== sc.id; });
+      state.profiles.forEach(function (p) {
+        if (p.settings.sceneIds) p.settings.sceneIds = p.settings.sceneIds.filter(function (id) { return id !== sc.id; });
+      });
+      saveScenes(); saveProfiles();
+      releaseImage(sc.imageBlobId).then(renderT2);
+    },
+    sceneImageClear: function (el) {
+      var sc = findScene(el.getAttribute('data-id'));
+      if (!sc) return;
+      var old = sc.imageBlobId;
+      sc.imageBlobId = null;
+      saveScenes();
+      releaseImage(old).then(renderT2);
+    },
+    t3Open: function (el) {
+      var id = el.getAttribute('data-id');
+      state.t3.openSession = state.t3.openSession === id ? null : id;
+      renderT3();
+    },
+    t3AddSupport: function (el) { t3AddSupport(el.getAttribute('data-sid'), Number(el.getAttribute('data-i'))); }
+  };
+  appEl.addEventListener('click', function (e) {
+    var el = e.target.closest('[data-action]');
+    if (!el || el.disabled) return;
+    var fn = ACTIONS[el.getAttribute('data-action')];
+    if (fn) fn(el, e);
+  });
+  appEl.addEventListener('change', function (e) {
+    var t = e.target;
+    if (t.dataset.device) {
+      if (t.dataset.device === 'skipCodeSelection') {
+        state.device.skipCodeSelection = t.checked;
+        if (t.checked && !findProfile(state.device.lastProfileId) && sortedProfiles()[0]) state.device.lastProfileId = sortedProfiles()[0].id;
+      } else {
+        state.device.lastProfileId = t.value;
+      }
+      saveDevice(); renderT1();
+    } else if (state.screen === 'tedit') {
+      onEditChange(t);
+    } else if (t.dataset.sceneFile) {
+      onSceneFile(t);
+    } else if (t.dataset.sceneField) {
+      onSceneChange(t);
+    } else if (t.dataset.t3) {
+      state.t3[t.dataset.t3] = t.value; state.t3.openSession = null; renderT3();
+    }
+  });
+  // ピンチ・ダブルタップによる拡大を児童画面で抑える（iOS Safari）
+  document.addEventListener('gesturestart', function (e) { e.preventDefault(); });
+
+  // ===== 起動 =====
+  function init() {
+    state.profiles = lsGet(LS.profiles, []) || [];
+    state.profiles.forEach(function (p) { p.settings = C.normalizeSettings(p.settings); });
+    state.device = lsGet(LS.device, null) || { skipCodeSelection: false, lastProfileId: null };
+    var sc = lsGet(LS.scenes, null);
+    if (!sc) { sc = C.defaultScenes(); state.scenes = sc; saveScenes(); } else state.scenes = sc;
+    idbOpen().then(function () {
+      // 前回の途中終了（再読み込み等）のセッションは「中断」にする
+      return idbGetAll('sessions').then(function (list) {
+        list.forEach(function (ss) {
+          if (ss.status === 'inProgress') {
+            ss.status = 'interrupted';
+            idbPut('sessions', ss);
+          }
+        });
+      });
+    }).then(function () { render(); });
+  }
+  window.__tokei = { state: state, C: C, idbGetAll: idbGetAll };
+  init();
+})();
+</script>
+</body>
+</html>
