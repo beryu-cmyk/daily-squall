@@ -1,0 +1,8 @@
+{
+  "name": "tokei-app",
+  "private": true,
+  "description": "とけいを よもう（index.html 1ファイル）。package.json はテスト用",
+  "scripts": {
+    "test": "node --test tests/core.test.js && NODE_PATH=$(npm root -g) node --test --test-concurrency=1 tests/ui.test.js"
+  }
+}
